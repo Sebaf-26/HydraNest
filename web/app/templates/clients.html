@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}Clients - HydraNest{% endblock %}
+{% block heading %}Clients{% endblock %}
+{% block content %}
+
+<div class="flex items-baseline gap-3 mb-5">
+    <span class="text-3xl font-semibold">{{ ov.online_clients | length }}</span>
+    <span class="text-sm text-ink-400">of {{ ov.clients | length }} Macs online</span>
+    <span class="text-xs text-ink-500 ml-auto">sessions checked {{ ov.live.checked_ts | ago }}</span>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-5">
+{% for c in ov.clients %}
+    <div class="hn-card p-5">
+        <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-3 min-w-0">
+                <span class="rounded-xl bg-white/5 p-3 {% if c.online %}text-accent-400{% else %}text-ink-400{% endif %}">{{ ui.mac_icon(c.is_laptop, 'h-7 w-7') }}</span>
+                <div class="min-w-0">
+                    <div class="font-medium truncate">{{ c.name }}</div>
+                    <div class="text-xs text-ink-400 truncate">{{ c.model }}{% if c.model_id %} &middot; {{ c.model_id }}{% endif %}</div>
+                </div>
+            </div>
+            <span class="flex items-center gap-2 text-xs {% if c.online %}text-emerald-300{% else %}text-ink-400{% endif %}">
+                {{ ui.online_dot(c.online) }}{{ 'Online' if c.online else 'Offline' }}
+            </span>
+        </div>
+        <dl class="mt-5 grid grid-cols-2 gap-y-3 gap-x-4 text-sm">
+            <div><dt class="text-xs text-ink-400">User</dt><dd>{{ c.user }}</dd></div>
+            <div><dt class="text-xs text-ink-400">IP address</dt><dd class="font-mono text-xs mt-0.5">{{ c.ip or '-' }}</dd></div>
+            <div><dt class="text-xs text-ink-400">Last seen</dt><dd>{% if c.online %}now{% else %}{{ c.last_seen_ts | ago if c.last_seen_ts else '-' }}{% endif %}</dd></div>
+            <div><dt class="text-xs text-ink-400">Last backup</dt><dd title="{{ c.last_backup_ts | ts }}">{{ c.last_backup_ts | ago }}</dd></div>
+            <div><dt class="text-xs text-ink-400">Backup size</dt><dd>{{ c.size_bytes | bytes }}</dd></div>
+            <div><dt class="text-xs text-ink-400">Snapshots</dt><dd>{{ c.snapshots or '-' }}</dd></div>
+        </dl>
+        <div class="mt-5 pt-4 border-t border-white/5 flex items-center justify-between">
+            {{ ui.status_chip(c.status) }}
+            {% if c.hostname %}<span class="text-xs text-ink-500 font-mono">{{ c.hostname }}</span>{% endif %}
+        </div>
+    </div>
+{% else %}
+    <div class="hn-card px-5 py-12 text-center text-ink-500 md:col-span-2 2xl:col-span-3">
+        No Mac has connected yet. Macs appear here after their first Time Machine connection.
+    </div>
+{% endfor %}
+</div>
+
+<p class="mt-6 text-xs text-ink-500">
+    Mac name and model come from the Time Machine backup; online status, IP and last seen from Samba's live sessions
+    (checked every minute and remembered across restarts).
+</p>
+
+{% endblock %}

@@ -3,7 +3,7 @@
 {% block heading %}Storage{% endblock %}
 {% block content %}
 
-<div class="rounded-xl border border-ink-800 bg-ink-900 p-6">
+<div class="hn-card p-6">
     <div class="flex items-center justify-between">
         <div>
             <div class="text-xs uppercase tracking-wider text-ink-400">Backup volume</div>
@@ -30,7 +30,7 @@
     {% if smart %}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     {% for s in smart %}
-        <div class="rounded-xl border border-ink-800 bg-ink-900 p-5">
+        <div class="hn-card p-5">
             <div class="flex items-center justify-between">
                 <div>
                     <div class="font-medium">{{ s.model }}</div>
@@ -60,7 +60,7 @@
     {% endfor %}
     </div>
     {% else %}
-    <div class="rounded-xl border border-ink-800 bg-ink-900 p-6 text-sm text-ink-400">
+    <div class="hn-card p-6 text-sm text-ink-400">
         SMART data unavailable. On Docker Desktop for Mac, raw block devices
         are not visible to the container. On Linux hosts, ensure the
         <code class="text-ink-200">smartmontools</code> package is installed

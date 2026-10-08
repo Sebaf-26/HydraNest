@@ -9,12 +9,15 @@ actual work inside the container.
 from __future__ import annotations
 
 import asyncio
+import datetime as dt
+import json
 import logging
 import re
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
+from . import timemachine
 from .config import Settings
 
 log = logging.getLogger(__name__)
@@ -44,6 +47,8 @@ class SmbSession:
     machine: str
     ip: str
     protocol: str
+    connected_ts: int | None = None
+    encrypted: bool = False
 
 
 class SambaManager:
@@ -109,15 +114,14 @@ class SambaManager:
             username = conf.stem
             quota = self._parse_quota(conf)
             user_dir = self.settings.backup_path / username
-            used = _dir_size(user_dir) if user_dir.exists() else 0
-            last_backup = _last_backup_ts(user_dir)
+            scan = timemachine.scan_user(user_dir)
             users.append(
                 TimeNestUser(
                     username=username,
                     quota_gb=quota,
                     path=user_dir,
-                    used_bytes=used,
-                    last_backup_ts=last_backup,
+                    used_bytes=scan.size_bytes,
+                    last_backup_ts=scan.last_backup_ts,
                 )
             )
         users.sort(key=lambda u: u.username)
@@ -125,12 +129,21 @@ class SambaManager:
 
     # --------------------------------------------------------------- sessions
 
-    async def list_sessions(self) -> list[SmbSession]:
+    async def list_sessions_safe(self) -> list[SmbSession]:
         try:
-            out = await self._exec("smbstatus", "-b")
+            return await self.list_sessions()
         except RuntimeError as exc:
             log.warning("smbstatus failed: %s", exc)
             return []
+
+    async def list_sessions(self) -> list[SmbSession]:
+        """Active SMB sessions. Raises RuntimeError if Samba is unreachable."""
+        try:
+            out = await self._exec("smbstatus", "--json")
+            return _parse_sessions_json(out)
+        except (RuntimeError, ValueError) as exc:
+            log.debug("smbstatus --json unavailable (%s), falling back", exc)
+        out = await self._exec("smbstatus", "-b")
         return [
             SmbSession(
                 pid=int(m["pid"]),
@@ -193,29 +206,38 @@ class SambaManager:
         return stdout.decode()
 
 
-def _dir_size(path: Path) -> int:
-    total = 0
-    try:
-        for entry in path.rglob("*"):
-            try:
-                total += entry.stat().st_size
-            except (OSError, FileNotFoundError):
-                continue
-    except (OSError, PermissionError):
-        pass
-    return total
+def _parse_sessions_json(out: str) -> list[SmbSession]:
+    data = json.loads(out)
+    connected: dict[str, int] = {}
+    for tcon in (data.get("tcons") or {}).values():
+        sid = str(tcon.get("session_id", ""))
+        ts = _iso_ts(tcon.get("connected_at"))
+        if sid and ts and (sid not in connected or ts < connected[sid]):
+            connected[sid] = ts
+    sessions = []
+    for sid, sess in (data.get("sessions") or {}).items():
+        user = sess.get("username") or ""
+        if not user or user in ("nobody", "-1"):
+            continue
+        enc = (sess.get("encryption") or {}).get("degree", "none")
+        sessions.append(
+            SmbSession(
+                pid=int((sess.get("server_id") or {}).get("pid", 0) or 0),
+                user=user,
+                machine=sess.get("remote_machine") or "",
+                ip=sess.get("remote_machine") or "",
+                protocol=sess.get("session_dialect") or "",
+                connected_ts=connected.get(str(sid)),
+                encrypted=enc not in ("none", "", None),
+            )
+        )
+    return sessions
 
 
-def _last_backup_ts(path: Path) -> int | None:
-    # Time Machine writes a .com.apple.timemachine.supported file inside
-    # the sparsebundle when it finishes a checkpoint. Fall back to the
-    # directory mtime if we cannot find one.
+def _iso_ts(value: object) -> int | None:
+    if not isinstance(value, str):
+        return None
     try:
-        newest = 0
-        for candidate in path.rglob(".com.apple.timemachine.supported"):
-            newest = max(newest, int(candidate.stat().st_mtime))
-        if newest:
-            return newest
-        return int(path.stat().st_mtime) if path.exists() else None
-    except (OSError, PermissionError):
+        return int(dt.datetime.fromisoformat(value).timestamp())
+    except ValueError:
         return None

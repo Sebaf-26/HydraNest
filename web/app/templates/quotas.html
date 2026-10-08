@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}Quotas - HydraNest{% endblock %}
+{% block heading %}Quotas{% endblock %}
+{% block content %}
+
+{% if updated %}
+<div class="mb-5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 px-4 py-2 text-sm text-emerald-300">
+    Quota of <span class="font-semibold">{{ updated }}</span> updated.
+</div>
+{% endif %}
+{% if error %}
+<div class="mb-5 rounded-lg bg-red-500/10 border border-red-500/30 px-4 py-2 text-sm text-red-300">{{ error }}</div>
+{% endif %}
+
+{% set allocated = ov.users | map(attribute='quota_bytes') | sum %}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="hn-card p-5">
+        <div class="text-xs uppercase tracking-wider text-ink-400">Allocated</div>
+        <div class="mt-2 text-3xl font-semibold">{{ allocated | bytes }}</div>
+        <div class="text-xs text-ink-500 mt-1">sum of all quotas</div>
+    </div>
+    <div class="hn-card p-5">
+        <div class="text-xs uppercase tracking-wider text-ink-400">Used</div>
+        <div class="mt-2 text-3xl font-semibold">{{ ov.backups_bytes | bytes }}</div>
+        <div class="text-xs text-ink-500 mt-1">{{ ((ov.backups_bytes / allocated * 100) | round(1)) if allocated else 0 }}% of allocated</div>
+    </div>
+    <div class="hn-card p-5">
+        <div class="text-xs uppercase tracking-wider text-ink-400">Disk capacity</div>
+        <div class="mt-2 text-3xl font-semibold">{{ ov.disk.total_bytes | bytes if ov.disk else '-' }}</div>
+        <div class="text-xs mt-1 {% if ov.disk and allocated > ov.disk.total_bytes %}text-amber-300{% else %}text-ink-500{% endif %}">
+            {% if ov.disk and allocated > ov.disk.total_bytes %}quotas exceed the disk: Time Machine may fill it{% else %}quotas fit on the disk{% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="hn-card mt-6">
+    {{ ui.card_head('Per-user quotas', 'the size Time Machine sees for each share; changes apply immediately') }}
+    <table class="w-full text-sm">
+        <thead class="text-xs uppercase tracking-wider text-ink-400">
+            <tr>
+                <th class="text-left px-5 py-2">User</th>
+                <th class="text-left px-5 py-2 w-2/5">Usage</th>
+                <th class="text-right px-5 py-2">Used</th>
+                <th class="text-right px-5 py-2">Free</th>
+                <th class="text-right px-5 py-2">Quota</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-white/5">
+        {% for r in ov.users %}
+            <tr>
+                <td class="px-5 py-3 font-medium">{{ r.user.username }}</td>
+                <td class="px-5 py-3">
+                    <div class="flex items-center gap-3">
+                        <div class="flex-1">{{ ui.bar(r.pct, 'h-2') }}</div>
+                        <span class="text-xs w-12 text-right {% if r.pct >= 90 %}text-amber-300{% else %}text-ink-400{% endif %}">{{ r.pct }}%</span>
+                    </div>
+                </td>
+                <td class="px-5 py-3 text-right">{{ r.user.used_bytes | bytes }}</td>
+                <td class="px-5 py-3 text-right text-ink-300">{{ r.free_bytes | bytes }}</td>
+                <td class="px-5 py-3 text-right">
+                    <form method="post" action="/quotas/{{ r.user.username }}" class="inline-flex items-center gap-2">
+                        <input name="quota_gb" type="number" min="10" max="100000" value="{{ r.user.quota_gb }}" required
+                               class="w-24 rounded-md border-white/10 bg-ink-900 text-ink-100 px-2 py-1 text-right text-sm focus:border-accent-500 focus:ring-accent-500">
+                        <span class="text-xs text-ink-400">GB</span>
+                        <button class="rounded-md bg-white/5 hover:bg-accent-500 hover:text-ink-950 px-2.5 py-1 text-xs transition">Save</button>
+                    </form>
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="5" class="px-5 py-10 text-center text-ink-500">No users yet. <a href="/users" class="text-accent-400">Create one &rarr;</a></td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<p class="mt-4 text-xs text-ink-500">Rule of thumb: about 2&times; the Mac's disk size. When a backup reaches its quota, Time Machine deletes the oldest snapshots.</p>
+
+{% endblock %}

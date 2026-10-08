@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}Backups - HydraNest{% endblock %}
+{% block heading %}Backups{% endblock %}
+{% block content %}
+
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="hn-card p-5">
+        <div class="text-xs uppercase tracking-wider text-ink-400">Backups</div>
+        <div class="mt-2 text-3xl font-semibold">{{ ov.bundles | length }}</div>
+        <div class="text-xs text-ink-500 mt-1">one per Mac</div>
+    </div>
+    <div class="hn-card p-5">
+        <div class="text-xs uppercase tracking-wider text-ink-400">Total size</div>
+        <div class="mt-2 text-3xl font-semibold">{{ ov.backups_bytes | bytes }}</div>
+        <div class="text-xs text-ink-500 mt-1">on the backup volume</div>
+    </div>
+    <div class="hn-card p-5">
+        <div class="text-xs uppercase tracking-wider text-ink-400">Snapshots</div>
+        <div class="mt-2 text-3xl font-semibold">{{ ov.bundles | map(attribute='snapshots') | map('length') | sum }}</div>
+        <div class="text-xs text-ink-500 mt-1">kept by Time Machine</div>
+    </div>
+    <div class="hn-card p-5">
+        <div class="text-xs uppercase tracking-wider text-ink-400">Latest backup</div>
+        {% set latest = ov.bundles[0] if ov.bundles else none %}
+        <div class="mt-2 text-3xl font-semibold">{{ latest.last_backup_ts | ago if latest else '-' }}</div>
+        <div class="text-xs text-ink-500 mt-1">{{ latest.mac_name if latest else 'no backups yet' }}</div>
+    </div>
+</div>
+
+<div class="mt-6 space-y-4">
+{% for b in ov.bundles %}
+    {% set c = (ov.clients | selectattr('name', 'equalto', b.mac_name) | selectattr('user', 'equalto', b.user) | first) %}
+    <details class="hn-card group">
+        <summary class="list-none cursor-pointer px-5 py-4 flex flex-wrap items-center gap-x-6 gap-y-2">
+            <span class="flex items-center gap-3 min-w-[14rem] flex-1">
+                <span class="rounded-lg bg-white/5 p-2 text-accent-400">{{ ui.mac_icon(b.is_laptop) }}</span>
+                <span>
+                    <span class="block font-medium">{{ b.mac_name }}</span>
+                    <span class="block text-xs text-ink-400">{{ b.model_name }}{% if b.model_id %} &middot; {{ b.model_id }}{% endif %} &middot; user {{ b.user }}</span>
+                </span>
+            </span>
+            <span class="text-sm w-28"><span class="block text-ink-400 text-xs">Size</span>{{ b.size_bytes | bytes }}</span>
+            <span class="text-sm w-24"><span class="block text-ink-400 text-xs">Snapshots</span>{{ b.snapshots | length if b.snapshots else '-' }}</span>
+            <span class="text-sm w-40"><span class="block text-ink-400 text-xs">Last backup</span><span title="{{ b.last_backup_ts | ts }}">{{ b.last_backup_ts | when }}</span></span>
+            <span class="w-32 text-right">{{ ui.status_chip(c.status if c else 'never') }}</span>
+            <svg class="h-4 w-4 text-ink-500 transition group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"></path></svg>
+        </summary>
+        <div class="border-t border-white/5 px-5 py-4 grid grid-cols-1 lg:grid-cols-3 gap-6 text-sm">
+            <dl class="space-y-2">
+                <div class="flex justify-between gap-4"><dt class="text-ink-400">Bundle</dt><dd class="font-mono text-xs truncate" title="{{ b.path }}">{{ b.path.name }}</dd></div>
+                <div class="flex justify-between gap-4"><dt class="text-ink-400">Verification</dt><dd>{{ b.verification or 'unknown' }}</dd></div>
+                <div class="flex justify-between gap-4"><dt class="text-ink-400">Last write</dt><dd>{{ b.last_activity_ts | ts }}</dd></div>
+                {% if b.snapshots %}
+                <div class="flex justify-between gap-4"><dt class="text-ink-400">Oldest snapshot</dt><dd>{{ b.snapshots[-1].completed_ts | ts }}</dd></div>
+                {% endif %}
+                {% if b.host_uuid %}
+                <div class="flex justify-between gap-4"><dt class="text-ink-400">Host UUID</dt><dd class="font-mono text-[11px] truncate">{{ b.host_uuid }}</dd></div>
+                {% endif %}
+            </dl>
+            <div class="lg:col-span-2">
+                <div class="text-xs uppercase tracking-wider text-ink-400 mb-2">Snapshots</div>
+                {% if b.snapshots %}
+                <ul class="max-h-64 overflow-y-auto divide-y divide-white/5 rounded-lg bg-black/20">
+                    {% for s in b.snapshots %}
+                    <li class="px-3 py-2 flex items-center justify-between">
+                        <span>{{ s.completed_ts | when }}</span>
+                        <span class="text-ink-400 text-xs">{{ s.bytes_copied | bytes if s.bytes_copied is not none else '' }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="text-ink-500 text-sm">No snapshot history in this bundle (first backup still running, or an older HFS+ backup).</div>
+                {% endif %}
+            </div>
+        </div>
+    </details>
+{% else %}
+    <div class="hn-card px-5 py-12 text-center text-ink-500">
+        No Time Machine backups yet. On the Mac: System Settings &rarr; General &rarr; Time Machine &rarr; Add Backup Disk.
+    </div>
+{% endfor %}
+</div>
+
+{% endblock %}

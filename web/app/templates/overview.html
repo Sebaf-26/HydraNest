@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}Overview - HydraNest{% endblock %}
+{% block heading %}Overview{% endblock %}
+{% block content %}
+
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
+
+    {# ---------------- Storage usage ---------------- #}
+    <div class="hn-card p-5">
+        <div class="font-medium">Storage Usage</div>
+        {% if ov.disk %}
+        {% set total = ov.disk.total_bytes %}
+        {% set c = 263.89 %}{# 2 * pi * 42 #}
+        {% set b_len = (ov.backups_bytes / total * c) if total else 0 %}
+        {% set o_len = (ov.other_bytes / total * c) if total else 0 %}
+        <div class="mt-4 flex items-center gap-8">
+            <div class="relative h-40 w-40 shrink-0">
+                <svg viewBox="0 0 100 100" class="h-full w-full -rotate-90">
+                    <defs>
+                        <linearGradient id="g-backups" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="#5ee0f5"/>
+                            <stop offset="100%" stop-color="#3b82f6"/>
+                        </linearGradient>
+                    </defs>
+                    <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="9"/>
+                    {% if o_len > 0 %}
+                    <circle cx="50" cy="50" r="42" fill="none" stroke="#475569" stroke-width="9"
+                            stroke-dasharray="{{ o_len }} {{ c }}" stroke-dashoffset="{{ -b_len }}"/>
+                    {% endif %}
+                    {% if b_len > 0 %}
+                    <circle cx="50" cy="50" r="42" fill="none" stroke="url(#g-backups)" stroke-width="9" stroke-linecap="round"
+                            stroke-dasharray="{{ [b_len, 1.5] | max }} {{ c }}"/>
+                    {% endif %}
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                    <div class="text-xl font-semibold">{{ ov.disk.used_bytes | bytes }}</div>
+                    <div class="text-[11px] text-ink-400">of {{ total | bytes }}</div>
+                </div>
+            </div>
+            <dl class="flex-1 space-y-3 text-sm">
+                <div class="flex items-center justify-between gap-4">
+                    <dt class="flex items-center gap-2 text-ink-300"><span class="h-2 w-2 rounded-full bg-accent-400"></span>Backups</dt>
+                    <dd class="font-medium">{{ ov.backups_bytes | bytes }}</dd>
+                </div>
+                {% if ov.other_bytes > 0 %}
+                <div class="flex items-center justify-between gap-4">
+                    <dt class="flex items-center gap-2 text-ink-300"><span class="h-2 w-2 rounded-full bg-slate-500"></span>Other data</dt>
+                    <dd class="font-medium">{{ ov.other_bytes | bytes }}</dd>
+                </div>
+                {% endif %}
+                <div class="flex items-center justify-between gap-4">
+                    <dt class="flex items-center gap-2 text-ink-300"><span class="h-2 w-2 rounded-full bg-white/15"></span>Free</dt>
+                    <dd class="font-medium">{{ ov.disk.free_bytes | bytes }}</dd>
+                </div>
+                <div class="pt-2 border-t border-white/5 text-xs text-ink-400">{{ ov.disk.percent }}% of the backup volume used</div>
+            </dl>
+        </div>
+        {% else %}
+        <div class="mt-6 text-sm text-red-300">Backup volume is not mounted.</div>
+        {% endif %}
+    </div>
+
+    {# ---------------- Backup health ---------------- #}
+    {% set h = ov.health %}
+    {% set hc = {'ok': ('text-emerald-400', 'from-emerald-500/15'), 'warn': ('text-amber-400', 'from-amber-500/15'), 'crit': ('text-red-400', 'from-red-500/15')}[h.level] %}
+    <div class="hn-card p-5 bg-gradient-to-br {{ hc[1] }} to-transparent">
+        <div class="font-medium">Backup Health</div>
+        <div class="mt-6 flex items-center gap-5">
+            <svg class="h-16 w-16 shrink-0 {{ hc[0] }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2.5l8 3v6c0 5-3.4 8.6-8 10-4.6-1.4-8-5-8-10v-6z"></path>
+                {% if h.level == 'ok' %}<path d="M8.5 12l2.5 2.5 4.5-5"></path>
+                {% else %}<path d="M12 8v4.5 M12 16h.01"></path>{% endif %}
+            </svg>
+            <div>
+                <div class="text-2xl font-semibold {{ hc[0] }}">{{ h.title }}</div>
+                <div class="text-sm text-ink-300 mt-1">{{ h.detail }}</div>
+            </div>
+        </div>
+        {% if h.issues | length > 1 %}
+        <ul class="mt-5 space-y-1.5 text-xs text-ink-300">
+            {% for issue in h.issues[1:5] %}<li class="flex gap-2"><span class="{{ hc[0] }}">&bull;</span>{{ issue }}</li>{% endfor %}
+        </ul>
+        {% endif %}
+        <div class="mt-5 grid grid-cols-3 gap-3 text-center">
+            <div class="rounded-lg bg-white/[0.03] py-2.5">
+                <div class="text-lg font-semibold">{{ ov.users | length }}</div>
+                <div class="text-[11px] text-ink-400">users</div>
+            </div>
+            <div class="rounded-lg bg-white/[0.03] py-2.5">
+                <div class="text-lg font-semibold">{{ ov.bundles | length }}</div>
+                <div class="text-[11px] text-ink-400">backups</div>
+            </div>
+            <div class="rounded-lg bg-white/[0.03] py-2.5">
+                <div class="text-lg font-semibold">{{ ov.bundles | map(attribute='snapshots') | map('length') | sum }}</div>
+                <div class="text-[11px] text-ink-400">snapshots</div>
+            </div>
+        </div>
+    </div>
+
+    {# ---------------- Connected Macs ---------------- #}
+    <div class="hn-card">
+        {{ ui.card_head('Connected Macs', 'live SMB sessions and last seen', '/clients', 'All clients') }}
+        <div class="px-5 pb-2 flex items-end justify-between">
+            <div class="flex items-baseline gap-2">
+                <span class="text-4xl font-semibold">{{ ov.online_clients | length }}</span>
+                <span class="text-sm {% if ov.online_clients %}text-emerald-400{% else %}text-ink-400{% endif %}">online</span>
+            </div>
+            <div class="flex -space-x-2 text-ink-500">
+                {{ ui.mac_icon(true, 'h-10 w-10') }}{{ ui.mac_icon(false, 'h-10 w-10') }}
+            </div>
+        </div>
+        <ul class="px-5 pb-4 divide-y divide-white/5">
+            {% for c in ov.clients[:5] %}
+            <li class="py-2.5 flex items-center justify-between text-sm">
+                <span class="flex items-center gap-2.5 min-w-0">
+                    {{ ui.online_dot(c.online) }}
+                    <span class="truncate">{{ c.name }}</span>
+                    <span class="text-xs text-ink-500 truncate">{{ c.user }}</span>
+                </span>
+                <span class="text-xs text-ink-400 shrink-0">{% if c.online %}online now{% else %}{{ c.last_seen_ts | ago if c.last_seen_ts else 'not seen yet' }}{% endif %}</span>
+            </li>
+            {% else %}
+            <li class="py-6 text-center text-sm text-ink-500">No Mac has connected yet.</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    {# ---------------- Top users by usage ---------------- #}
+    <div class="hn-card">
+        {{ ui.card_head('Top Users by Usage', 'share of each quota', '/quotas', 'Quotas') }}
+        <ul class="px-5 pb-5 space-y-4">
+            {% for r in ov.users[:5] %}
+            <li>
+                <div class="flex items-center justify-between text-sm">
+                    <span>{{ r.user.username }}</span>
+                    <span class="font-medium">{{ r.user.used_bytes | bytes }}</span>
+                </div>
+                <div class="mt-1.5 flex items-center gap-3">
+                    <div class="flex-1">{{ ui.bar(r.pct) }}</div>
+                    <span class="text-xs text-ink-400 whitespace-nowrap text-right">{{ r.pct }}% of {{ r.user.quota_gb }} GB</span>
+                </div>
+            </li>
+            {% else %}
+            <li class="py-6 text-center text-sm text-ink-500">No users yet. <a href="/users" class="text-accent-400">Create one &rarr;</a></li>
+            {% endfor %}
+        </ul>
+    </div>
+
+</div>
+
+{# ---------------- Recent backups ---------------- #}
+<div class="hn-card mt-5">
+    {{ ui.card_head('Recent Backups', 'completed Time Machine snapshots', '/backups', 'All backups') }}
+    <table class="w-full text-sm">
+        <tbody class="divide-y divide-white/5">
+        {% for e in ov.events[:8] %}
+            <tr>
+                <td class="px-5 py-3">
+                    <span class="flex items-center gap-3">
+                        <span class="text-ink-400">{{ ui.mac_icon(e.is_laptop) }}</span>
+                        <span>{{ e.mac_name }}</span>
+                    </span>
+                </td>
+                <td class="px-5 py-3 text-ink-400 hidden md:table-cell">{{ e.user }}</td>
+                <td class="px-5 py-3 text-ink-300">{{ e.ts | when }}</td>
+                <td class="px-5 py-3 text-right font-medium">{{ e.bytes_copied | bytes if e.bytes_copied is not none else '' }}</td>
+                <td class="px-5 py-3 text-right">{{ ui.status_chip(e.status) }}</td>
+            </tr>
+        {% else %}
+            <tr><td class="px-5 py-8 text-center text-ink-500">No backups yet. Add HydraNest as a backup disk in Time Machine on your Mac.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

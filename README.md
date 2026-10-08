@@ -9,14 +9,14 @@ destination. It runs as one Docker stack:
 | :--------------- | :------------------------------------------------------------ |
 | `timenest-samba` | Samba 4 with `vfs_fruit`, one Time Machine share per user     |
 | `timenest-avahi` | Bonjour/mDNS, so Macs find the server on their own            |
-| `timenest-web`   | Admin web UI: users, quotas, passwords, storage, metrics      |
+| `timenest-web`   | Admin web UI: overview, backups, Macs, users, quotas, storage |
 
 HydraNest is a fork of [momenbasel/timenest](https://github.com/momenbasel/timenest).
 It fixes the Samba and user-management problems found when running it on
 Proxmox + Portainer. See [What the fork fixes](#what-the-fork-fixes) and the
 [CHANGELOG](CHANGELOG.md).
 
-<img src="docs/screenshots/03-users.png" alt="HydraNest users page" width="100%">
+<img src="docs/screenshots/02-overview.png" alt="HydraNest overview: storage usage, backup health, connected Macs, top users, recent backups" width="100%">
 
 ---
 
@@ -130,13 +130,34 @@ If the server doesn't appear, in Finder use **Go -> Connect to Server**
 
 ---
 
-## Screenshots
+## Web UI
 
-| Dashboard | Storage |
+| Page | What it shows |
+| :--- | :------------ |
+| **Overview** | Storage donut (backups / other data / free), backup health, connected Macs, top users by quota usage, recent Time Machine snapshots |
+| **Backups** | One card per Mac backup: model, size, snapshot count and list, verification state, last write |
+| **Clients** | Every Mac: online/offline, IP, last seen, last backup, status (up to date, backing up, overdue) |
+| **Users** | Create, edit (quota and password), remove |
+| **Quotas** | Usage bar per user, free space, inline quota edit, warning when quotas exceed the disk |
+| **Storage** | Backup volume usage and SMART health |
+| **Settings** | Current configuration and Prometheus target |
+
+All data is real: Mac name and model come from the Time Machine bundle
+(`<Mac>.sparsebundle` and its `com.apple.TimeMachine.*.plist` files),
+snapshots from `SnapshotHistory.plist`, online status and IP from Samba's live
+sessions. The web container polls Samba every minute and remembers when each
+Mac was last seen (`DATA_PATH/web/clients.json`). **Backup health** turns
+amber when a Mac hasn't completed a backup in 7 days, a user is above 90% of
+the quota, or the disk is above 90% full, and red when Samba is down or the
+backup volume is missing.
+
+| Backups | Clients |
 | :-: | :-: |
-| <img src="docs/screenshots/02-dashboard.png" alt="Dashboard" width="100%"> | <img src="docs/screenshots/04-storage.png" alt="Storage" width="100%"> |
-| **Settings** | **Login** |
-| <img src="docs/screenshots/05-settings.png" alt="Settings" width="100%"> | <img src="docs/screenshots/01-login.png" alt="Login" width="100%"> |
+| <img src="docs/screenshots/07-backups.png" alt="Backups" width="100%"> | <img src="docs/screenshots/08-clients.png" alt="Clients" width="100%"> |
+| **Quotas** | **Users** |
+| <img src="docs/screenshots/09-quotas.png" alt="Quotas" width="100%"> | <img src="docs/screenshots/03-users.png" alt="Users" width="100%"> |
+| **Storage** | **Login** |
+| <img src="docs/screenshots/04-storage.png" alt="Storage" width="100%"> | <img src="docs/screenshots/01-login.png" alt="Login" width="100%"> |
 
 ---
 

@@ -1,10 +1,15 @@
-"""FastAPI entrypoint for the TimeNest web UI."""
+"""FastAPI entrypoint for the HydraNest web UI."""
 
 from __future__ import annotations
 
+import datetime as _dt
 import logging
 import secrets
+import time
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Any
 
 from fastapi import Depends, FastAPI, Form, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
@@ -12,16 +17,25 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
-from . import __version__, disks, metrics, samba_mgr
+from . import __version__, disks, metrics, overview, samba_mgr, timemachine
+from .monitor import Monitor
 from .auth import LoginDep, verify_login
 from .config import Settings, get_settings
 
 # ---------------------------------------------------------------------------
 # App wiring
 # ---------------------------------------------------------------------------
-app = FastAPI(title="HydraNest", docs_url=None, redoc_url=None)
-
 settings = get_settings()
+
+
+@asynccontextmanager
+async def _lifespan(_: FastAPI) -> AsyncIterator[None]:
+    monitor.start()
+    yield
+    await monitor.stop()
+
+
+app = FastAPI(title="HydraNest", docs_url=None, redoc_url=None, lifespan=_lifespan)
 
 logging.basicConfig(
     level=getattr(logging, settings.log_level.upper(), logging.INFO),
@@ -67,6 +81,9 @@ def _mgr() -> samba_mgr.SambaManager:
     return samba_mgr.SambaManager(settings)
 
 
+monitor = Monitor(_mgr, settings.data_dir)
+
+
 def _fmt_bytes(n: int | None) -> str:
     if n is None:
         return "-"
@@ -80,12 +97,51 @@ def _fmt_bytes(n: int | None) -> str:
 def _fmt_ts(ts: int | None) -> str:
     if not ts:
         return "never"
-    import datetime as _dt
     return _dt.datetime.fromtimestamp(ts).strftime("%Y-%m-%d %H:%M")
+
+
+def _fmt_ago(ts: int | None) -> str:
+    if not ts:
+        return "never"
+    delta = int(time.time()) - ts
+    if delta < 60:
+        return "just now"
+    for size, unit in ((86400 * 30, "mo"), (86400, "d"), (3600, "h"), (60, "m")):
+        if delta >= size:
+            return f"{delta // size}{unit} ago"
+    return "just now"
+
+
+def _fmt_when(ts: int | None) -> str:
+    """'Today, 10:42' / 'Yesterday, 22:10' / '3 Oct, 09:15'."""
+    if not ts:
+        return "-"
+    d = _dt.datetime.fromtimestamp(ts)
+    today = _dt.date.today()
+    if d.date() == today:
+        return f"Today, {d:%H:%M}"
+    if d.date() == today - _dt.timedelta(days=1):
+        return f"Yesterday, {d:%H:%M}"
+    return f"{d.day} {d:%b}, {d:%H:%M}"
 
 
 templates.env.filters["bytes"] = _fmt_bytes
 templates.env.filters["ts"] = _fmt_ts
+templates.env.filters["ago"] = _fmt_ago
+templates.env.filters["when"] = _fmt_when
+
+
+async def _render(request: Request, template: str, page: str, **ctx: Any) -> Response:
+    live = await monitor.current()
+    return templates.TemplateResponse(
+        template,
+        {"request": request, "page": page, "samba_ok": live.samba_ok, **ctx},
+    )
+
+
+async def _overview() -> overview.Overview:
+    live = await monitor.current()
+    return overview.build(settings, _mgr().list_users(), live)
 
 
 # ---------------------------------------------------------------------------
@@ -130,39 +186,66 @@ def logout(request: Request) -> Response:
 
 
 @app.get("/", response_class=HTMLResponse)
-async def dashboard(request: Request, user: str = LoginDep) -> Response:
-    mgr = _mgr()
-    users = mgr.list_users()
-    sessions = await mgr.list_sessions()
-    du = disks.usage(settings.backup_path)
-    return templates.TemplateResponse(
-        "dashboard.html",
-        {
-            "request": request,
-            "page": "dashboard",
-            "users": users,
-            "sessions": sessions,
-            "disk": du,
-            "backup_path": str(settings.backup_path),
-            "server_name": settings.admin_user,
-        },
+async def overview_page(request: Request, user: str = LoginDep) -> Response:
+    return await _render(request, "overview.html", "overview", ov=await _overview())
+
+
+@app.get("/backups", response_class=HTMLResponse)
+async def backups_page(request: Request, user: str = LoginDep) -> Response:
+    return await _render(request, "backups.html", "backups", ov=await _overview())
+
+
+@app.get("/clients", response_class=HTMLResponse)
+async def clients_page(request: Request, user: str = LoginDep) -> Response:
+    return await _render(request, "clients.html", "clients", ov=await _overview())
+
+
+@app.get("/quotas", response_class=HTMLResponse)
+async def quotas_page(request: Request, user: str = LoginDep) -> Response:
+    return await _render(
+        request,
+        "quotas.html",
+        "quotas",
+        ov=await _overview(),
+        updated=request.query_params.get("updated"),
+        error=request.query_params.get("error"),
     )
 
 
+@app.post("/quotas/{username}")
+async def quotas_update(
+    username: str,
+    quota_gb: int = Form(...),
+    user: str = LoginDep,
+) -> Response:
+    try:
+        await _mgr().update_user(username, quota_gb)
+    except (ValueError, RuntimeError) as exc:
+        return RedirectResponse(f"/quotas?error={exc}", status_code=status.HTTP_303_SEE_OTHER)
+    log.info("updated quota of '%s' to %d GB", username, quota_gb)
+    return RedirectResponse(f"/quotas?updated={username}", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@app.post("/refresh")
+async def refresh(request: Request, user: str = LoginDep) -> Response:
+    timemachine.invalidate()
+    await monitor.refresh()
+    back = request.headers.get("referer") or "/"
+    return RedirectResponse(back, status_code=status.HTTP_303_SEE_OTHER)
+
+
 @app.get("/users", response_class=HTMLResponse)
-def users_page(request: Request, user: str = LoginDep) -> Response:
-    return templates.TemplateResponse(
+async def users_page(request: Request, user: str = LoginDep) -> Response:
+    return await _render(
+        request,
         "users.html",
-        {
-            "request": request,
-            "page": "users",
-            "users": _mgr().list_users(),
-            "default_quota_gb": settings.default_quota_gb,
-            "created": request.query_params.get("created"),
-            "deleted": request.query_params.get("deleted"),
-            "updated": request.query_params.get("updated"),
-            "error": request.query_params.get("error"),
-        },
+        "users",
+        users=_mgr().list_users(),
+        default_quota_gb=settings.default_quota_gb,
+        created=request.query_params.get("created"),
+        deleted=request.query_params.get("deleted"),
+        updated=request.query_params.get("updated"),
+        error=request.query_params.get("error"),
     )
 
 
@@ -245,33 +328,29 @@ async def disks_page(request: Request, user: str = LoginDep) -> Response:
         status_ = await disks.smart(dev)
         if status_:
             smart_results.append(status_)
-    return templates.TemplateResponse(
+    return await _render(
+        request,
         "disks.html",
-        {
-            "request": request,
-            "page": "disks",
-            "disk": du,
-            "smart": smart_results,
-            "backup_path": str(settings.backup_path),
-        },
+        "disks",
+        disk=du,
+        smart=smart_results,
+        backup_path=str(settings.backup_path),
     )
 
 
 @app.get("/settings", response_class=HTMLResponse)
-def settings_page(request: Request, user: str = LoginDep) -> Response:
-    return templates.TemplateResponse(
+async def settings_page(request: Request, user: str = LoginDep) -> Response:
+    return await _render(
+        request,
         "settings.html",
-        {
-            "request": request,
-            "page": "settings",
-            "settings": {
-                "admin_user": settings.admin_user,
-                "backup_path": str(settings.backup_path),
-                "default_quota_gb": settings.default_quota_gb,
-                "log_level": settings.log_level,
-                "timezone": settings.timezone,
-                "enable_metrics": settings.enable_metrics,
-            },
+        "settings",
+        settings={
+            "admin_user": settings.admin_user,
+            "backup_path": str(settings.backup_path),
+            "default_quota_gb": settings.default_quota_gb,
+            "log_level": settings.log_level,
+            "timezone": settings.timezone,
+            "enable_metrics": settings.enable_metrics,
         },
     )
 

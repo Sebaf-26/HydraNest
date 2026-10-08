@@ -4,6 +4,34 @@ HydraNest è un fork di [momenbasel/timenest](https://github.com/momenbasel/time
 (server Time Machine su Samba + Avahi + Web UI) con le correzioni emerse
 installandolo su Proxmox + Portainer.
 
+## v0.2.0 — 2026-10-08
+
+### Web UI — nuove pagine in stile mockup
+- **Overview** (al posto della Dashboard): ciambella di occupazione del
+  disco (backup / altri dati / libero), stato di salute dei backup, Mac
+  connessi, utenti con più spazio occupato rispetto alla quota, ultimi backup
+  Time Machine.
+- **Backups**: una scheda per ogni backup di Mac con modello, dimensione,
+  numero e lista degli snapshot, stato di verifica, ultima scrittura.
+- **Clients**: ogni Mac con online/offline, IP, ultima volta visto, ultimo
+  backup e stato (aggiornato, backup in corso, in ritardo, mai fatto).
+- **Quotas**: barra di utilizzo per utente, spazio libero, modifica della
+  quota direttamente nella tabella, avviso se la somma delle quote supera il
+  disco.
+- Nuovo stile (sfondo a gradiente, card, accento ciano), pulsante
+  **Refresh**, indicatore **Samba online/offline** reale (prima era fisso).
+- Pagina Settings aggiornata per Portainer.
+
+### Backend
+- `timemachine.py`: legge i bundle Time Machine (`.sparsebundle` /
+  `.backupbundle`), nome e modello del Mac, `SnapshotHistory.plist`, stato
+  di verifica; dimensioni in cache per 2 minuti.
+- `monitor.py`: interroga Samba ogni minuto (`smbstatus --json`, con
+  fallback al vecchio formato) e salva quando ogni Mac è stato visto
+  l'ultima volta in `DATA_PATH/web/clients.json`.
+- "Ultimo backup" ora usa gli snapshot reali invece del file
+  `.com.apple.timemachine.supported`.
+
 ## v0.1.3 — 2026-10-08
 
 ### Documentazione

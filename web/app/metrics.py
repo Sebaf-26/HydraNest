@@ -61,7 +61,7 @@ async def render(settings: Settings, mgr: samba_mgr.SambaManager) -> bytes:
     users = mgr.list_users()
     users_gauge.set(len(users))
 
-    sessions = await mgr.list_sessions()
+    sessions = await mgr.list_sessions_safe()
     sessions_gauge.set(len(sessions))
 
     for u in users:

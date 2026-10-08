@@ -1,4 +1,4 @@
-/* TimeNest admin UI tweaks that do not fit comfortably in Tailwind CDN. */
+/* HydraNest admin UI tweaks that do not fit comfortably in Tailwind CDN. */
 
 html { color-scheme: dark; }
 
@@ -18,3 +18,18 @@ code, pre, kbd { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospac
 *::-webkit-scrollbar-track { background: transparent; }
 *::-webkit-scrollbar-thumb { background: #1f2633; border-radius: 6px; }
 *::-webkit-scrollbar-thumb:hover { background: #2a3447; }
+
+/* HydraNest: deep navy gradient like the product mockup. */
+.hn-bg {
+    background:
+        radial-gradient(1200px 600px at 85% -10%, rgba(34, 199, 232, 0.10), transparent 60%),
+        radial-gradient(900px 500px at -10% 110%, rgba(59, 91, 219, 0.10), transparent 60%),
+        #05070d;
+    background-attachment: fixed;
+}
+.hn-card {
+    border-radius: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: linear-gradient(180deg, rgba(23, 29, 43, 0.85), rgba(14, 18, 28, 0.85));
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 10px 30px -15px rgba(0, 0, 0, 0.6);
+}

@@ -1,0 +1,52 @@
+{# Shared bits for the HydraNest pages. #}
+
+{% macro mac_icon(is_laptop, cls="h-5 w-5") -%}
+{% if is_laptop %}
+<svg class="{{ cls }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v10H4z M2 19h20 M3 15l-1 4 M21 15l1 4"></path></svg>
+{% else %}
+<svg class="{{ cls }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18v12H3z M8 20h8 M12 16v4"></path></svg>
+{% endif %}
+{%- endmacro %}
+
+{% macro status_chip(status) -%}
+{% set styles = {
+    'ok':      ('bg-emerald-500/10 text-emerald-300 ring-emerald-500/20', 'Up to date'),
+    'success': ('bg-emerald-500/10 text-emerald-300 ring-emerald-500/20', 'Success'),
+    'running': ('bg-accent-500/10 text-accent-300 ring-accent-500/20', 'Backing up'),
+    'updated': ('bg-ink-500/20 text-ink-200 ring-ink-500/30', 'Updated'),
+    'stale':   ('bg-amber-500/10 text-amber-300 ring-amber-500/20', 'Overdue'),
+    'failed':  ('bg-red-500/10 text-red-300 ring-red-500/20', 'Verify failed'),
+    'never':   ('bg-ink-500/20 text-ink-300 ring-ink-500/30', 'No backup yet'),
+} %}
+{% set st = styles.get(status, styles['never']) %}
+<span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset {{ st[0] }}">
+    {% if status in ('ok', 'success') %}
+    <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+    {% elif status == 'running' %}
+    <span class="h-1.5 w-1.5 rounded-full bg-accent-400 animate-pulse"></span>
+    {% endif %}
+    {{ st[1] }}
+</span>
+{%- endmacro %}
+
+{% macro online_dot(online) -%}
+<span class="inline-block h-2 w-2 rounded-full {% if online %}bg-emerald-400 shadow-[0_0_8px] shadow-emerald-400/60{% else %}bg-ink-500{% endif %}"></span>
+{%- endmacro %}
+
+{% macro bar(pct, cls="h-1.5") -%}
+{% set p = [pct, 100] | min %}
+<div class="{{ cls }} rounded-full bg-white/5 overflow-hidden">
+    <div class="h-full rounded-full {% if pct >= 90 %}bg-gradient-to-r from-amber-500 to-red-500{% elif pct >= 75 %}bg-gradient-to-r from-accent-500 to-amber-400{% else %}bg-gradient-to-r from-violet-500 to-accent-400{% endif %}"
+         style="width: {{ [p, 1.5] | max if pct > 0 else 0 }}%"></div>
+</div>
+{%- endmacro %}
+
+{% macro card_head(title, subtitle=None, link=None, link_label=None) -%}
+<div class="px-5 pt-5 pb-3 flex items-start justify-between">
+    <div>
+        <div class="font-medium text-ink-100">{{ title }}</div>
+        {% if subtitle %}<div class="text-xs text-ink-400 mt-0.5">{{ subtitle }}</div>{% endif %}
+    </div>
+    {% if link %}<a href="{{ link }}" class="text-xs text-accent-400 hover:text-accent-300">{{ link_label }} &rarr;</a>{% endif %}
+</div>
+{%- endmacro %}
