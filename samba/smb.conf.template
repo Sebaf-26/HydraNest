@@ -14,7 +14,7 @@
 [global]
     # --- identity ---
     workgroup = WORKGROUP
-    server string = ${SERVER_NAME} (TimeNest)
+    server string = ${SERVER_NAME} (HydraNest)
     netbios name = ${SERVER_NAME}
 
     # --- protocol / security ---

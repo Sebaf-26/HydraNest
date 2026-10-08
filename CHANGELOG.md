@@ -4,6 +4,15 @@ HydraNest è un fork di [momenbasel/timenest](https://github.com/momenbasel/time
 (server Time Machine su Samba + Avahi + Web UI) con le correzioni emerse
 installandolo su Proxmox + Portainer.
 
+## v0.1.2 — 2026-10-08
+
+### Web UI
+- Rebranding: la Web UI mostra "HydraNest" (sidebar, login, titoli delle
+  pagine) invece di "TimeNest".
+- La versione in sidebar viene da `__version__` invece di essere scritta a
+  mano nel template (prima mostrava sempre v0.1.0).
+- `server string` di Samba ora è `<SERVER_NAME> (HydraNest)`.
+
 ## v0.1.1 — 2026-10-08
 
 ### Deploy

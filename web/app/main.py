@@ -12,14 +12,14 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
-from . import disks, metrics, samba_mgr
+from . import __version__, disks, metrics, samba_mgr
 from .auth import LoginDep, verify_login
 from .config import Settings, get_settings
 
 # ---------------------------------------------------------------------------
 # App wiring
 # ---------------------------------------------------------------------------
-app = FastAPI(title="TimeNest", docs_url=None, redoc_url=None)
+app = FastAPI(title="HydraNest", docs_url=None, redoc_url=None)
 
 settings = get_settings()
 
@@ -59,7 +59,7 @@ app.mount("/static", StaticFiles(directory=_static_dir), name="static")
 
 _templates_dir = Path(__file__).resolve().parent / "templates"
 templates = Jinja2Templates(directory=_templates_dir)
-templates.env.globals["version"] = "0.1.0"
+templates.env.globals["version"] = __version__
 templates.env.globals["server_name"] = settings.admin_user
 
 
