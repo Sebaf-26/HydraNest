@@ -4,6 +4,17 @@ HydraNest è un fork di [momenbasel/timenest](https://github.com/momenbasel/time
 (server Time Machine su Samba + Avahi + Web UI) con le correzioni emerse
 installandolo su Proxmox + Portainer.
 
+## v0.1.1 — 2026-10-08
+
+### Deploy
+- Un solo `docker-compose.yml` per `docker compose` e per Portainer: rimosso
+  `docker-compose.portainer.yml`. Il compose usa le immagini precompilate
+  `ghcr.io/sebaf-26/hydranest-*` (niente più sezioni `build:`) e i percorsi
+  persistenti da `DATA_PATH` (default `./data`, su Portainer va messo
+  assoluto, es. `/TRE_TB/timenest/data`).
+- `install.sh` scarica le immagini invece di compilarle in locale;
+  `CONTRIBUTING.md` spiega come costruirle a mano per lo sviluppo.
+
 ## v0.1.0 — 2026-10-08
 
 Correzioni di Samba e della gestione utenti (vedi guida di troubleshooting

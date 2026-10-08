@@ -9,7 +9,11 @@ git clone https://github.com/momenbasel/timenest.git
 cd timenest
 cp .env.example .env
 # edit .env so ADMIN_PASSWORD is set and BACKUP_PATH points at a scratch dir
-docker compose up --build
+# docker-compose.yml uses the GHCR images; build local ones with the same tags first
+docker build --target samba -t ghcr.io/sebaf-26/hydranest-samba:latest .
+docker build --target avahi -t ghcr.io/sebaf-26/hydranest-avahi:latest .
+docker build -t ghcr.io/sebaf-26/hydranest-web:latest web
+docker compose up
 ```
 
 For web-only work (no real SMB needed) you can run the FastAPI app directly:

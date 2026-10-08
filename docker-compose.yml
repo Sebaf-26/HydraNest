@@ -1,4 +1,4 @@
-# TimeNest stack
+# HydraNest stack (fork of TimeNest)
 #
 # Three services:
 #   samba  - Samba 4 with vfs_fruit for Time Machine
@@ -6,26 +6,30 @@
 #   web    - FastAPI admin UI + Prometheus metrics
 #
 # Samba and Avahi need `network_mode: host` so mDNS broadcasts and SMB
-# traffic reach the LAN. This also means the SMB_PORT and WEB_PORT
-# variables below are informational only when host networking is used.
+# traffic reach the LAN.
 #
-# See README.md for per-platform notes, especially for Docker Desktop on
-# macOS where host networking must be enabled explicitly.
+# Uses the prebuilt images from GHCR, so the same file works with
+# `docker compose up -d` (variables from .env) and as a Portainer stack
+# (variables in the stack's "Environment variables" section). In Portainer
+# use ABSOLUTE paths, e.g.:
 #
-# HydraNest: persistent state lives under DATA_PATH (default ./data):
+#   BACKUP_PATH=/TRE_TB/timenest/backups
+#   DATA_PATH=/TRE_TB/timenest/data
+#   WEB_PORT=8003
+#   SMB_INTERFACES=eth0
+#   ADMIN_PASSWORD=<strong password>
+#
+# Persistent state lives under DATA_PATH (default ./data):
 #   samba/              passdb.tdb & co. (Samba accounts)
 #   config/shares.d/    one <user>.conf per user (shares, also read by the web UI)
 #   web/                web UI session data
-# For Portainer without local builds use docker-compose.portainer.yml.
+#
+# No patched entrypoint needs to be mounted: the --log-stdout, wildcard
+# include, template and user-persistence problems are fixed in the images.
 
 services:
 
   samba:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        TARGETARCH: ${TARGETARCH:-}
     image: ghcr.io/sebaf-26/hydranest-samba:latest
     container_name: timenest-samba
     restart: unless-stopped
@@ -40,7 +44,7 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       TZ: ${TIMEZONE:-UTC}
     volumes:
-      - ${BACKUP_PATH:?BACKUP_PATH must be set in .env}:/backup
+      - ${BACKUP_PATH:?BACKUP_PATH must be set}:/backup
       - ${DATA_PATH:-./data}/samba:/var/lib/samba
       # Mount ONLY shares.d: mounting all of /etc/timenest used to hide the
       # image's templates.
@@ -54,10 +58,6 @@ services:
 
   avahi:
     image: ghcr.io/sebaf-26/hydranest-avahi:latest
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: avahi
     container_name: timenest-avahi
     restart: unless-stopped
     network_mode: host
@@ -71,8 +71,6 @@ services:
       - samba
 
   web:
-    build:
-      context: ./web
     image: ghcr.io/sebaf-26/hydranest-web:latest
     container_name: timenest-web
     restart: unless-stopped
@@ -80,7 +78,7 @@ services:
       - "${WEB_PORT:-8080}:8080"
     environment:
       ADMIN_USER: ${ADMIN_USER:-admin}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD must be set in .env}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD must be set}
       BACKUP_PATH: /backup
       DEFAULT_QUOTA_GB: ${DEFAULT_QUOTA_GB:-500}
       ENABLE_METRICS: ${ENABLE_METRICS:-true}
@@ -89,7 +87,7 @@ services:
       SAMBA_CONTAINER: timenest-samba
       SHARES_PATH: /config/shares.d
     volumes:
-      - ${BACKUP_PATH:?BACKUP_PATH must be set in .env}:/backup:ro
+      - ${BACKUP_PATH:?BACKUP_PATH must be set}:/backup:ro
       - ${DATA_PATH:-./data}/web:/data
       - ${DATA_PATH:-./data}/samba:/samba:ro
       # Same directory the samba container writes shares.d into, so the
@@ -97,8 +95,7 @@ services:
       - ${DATA_PATH:-./data}/config:/config:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
     depends_on:
-      samba:
-        condition: service_started
+      - samba
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
       interval: 30s

@@ -3,8 +3,9 @@
 > that fixes Samba and user management when deployed on Docker/Portainer
 > (smbd `--log-stdout` crash on Samba 4.17, wildcard `include` not loading
 > shares, POSIX users lost on redeploy, web UI showing 0 users, quota editing).
-> Images: `ghcr.io/sebaf-26/hydranest-{samba,avahi,web}`. Portainer:
-> [`docker-compose.portainer.yml`](docker-compose.portainer.yml). See
+> Images: `ghcr.io/sebaf-26/hydranest-{samba,avahi,web}`. A single
+> [`docker-compose.yml`](docker-compose.yml) works both with `docker compose`
+> and as a Portainer stack (set absolute `BACKUP_PATH` / `DATA_PATH`). See
 > [CHANGELOG.md](CHANGELOG.md).
 
 <div align="center">

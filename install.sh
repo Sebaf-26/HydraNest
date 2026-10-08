@@ -139,8 +139,8 @@ fi
 # Launch
 # ---------------------------------------------------------------------------
 say "pulling images and starting the stack (this takes a minute the first time)"
-docker compose pull --ignore-pull-failures || true
-docker compose up -d --build
+docker compose pull
+docker compose up -d
 
 ok "TimeNest is running"
 HOST="$(hostname -s 2>/dev/null || hostname)"
