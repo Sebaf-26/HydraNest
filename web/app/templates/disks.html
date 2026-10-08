@@ -25,9 +25,11 @@
     {% endif %}
 </div>
 
+{# SMART is only shown when a physical disk is visible to the container;
+   on Proxmox/VM setups the host monitors the disk instead. #}
+{% if smart %}
 <div class="mt-6">
     <div class="text-xs uppercase tracking-wider text-ink-400 mb-3">SMART health</div>
-    {% if smart %}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     {% for s in smart %}
         <div class="hn-card p-5">
@@ -59,16 +61,7 @@
         </div>
     {% endfor %}
     </div>
-    {% else %}
-    <div class="hn-card p-6 text-sm text-ink-400">
-        SMART data unavailable. On Docker Desktop for Mac, raw block devices
-        are not visible to the container. On Linux hosts, ensure the
-        <code class="text-ink-200">smartmontools</code> package is installed
-        and the web container is started with the disk device mapped in
-        <code class="text-ink-200">docker-compose.yml</code> under
-        <code class="text-ink-200">devices:</code>.
-    </div>
-    {% endif %}
 </div>
+{% endif %}
 
 {% endblock %}

@@ -139,7 +139,7 @@ If the server doesn't appear, in Finder use **Go -> Connect to Server**
 | **Clients** | Every Mac: online/offline, IP, last seen, last backup, status (up to date, backing up, overdue) |
 | **Users** | Create, edit (quota and password), remove |
 | **Quotas** | Usage bar per user, free space, inline quota edit, warning when quotas exceed the disk |
-| **Storage** | Backup volume usage and SMART health |
+| **Storage** | Backup volume usage (plus SMART health when the container can see the physical disk; on Proxmox check it from the host) |
 | **Settings** | Current configuration and Prometheus target |
 
 All data is real: Mac name and model come from the Time Machine bundle

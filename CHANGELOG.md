@@ -4,6 +4,14 @@ HydraNest è un fork di [momenbasel/timenest](https://github.com/momenbasel/time
 (server Time Machine su Samba + Avahi + Web UI) con le correzioni emerse
 installandolo su Proxmox + Portainer.
 
+## v0.2.1 — 2026-10-08
+
+### Web UI
+- Storage: la sezione SMART viene nascosta quando il container non vede un
+  disco fisico (caso tipico su Proxmox/VM, dove la salute del disco si
+  controlla dall'host). Rimosso il vecchio messaggio "SMART data
+  unavailable" che parlava di Docker Desktop for Mac.
+
 ## v0.2.0 — 2026-10-08
 
 ### Web UI — nuove pagine in stile mockup
