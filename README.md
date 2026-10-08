@@ -1,3 +1,12 @@
+> [!NOTE]
+> **HydraNest** is a fork of [momenbasel/timenest](https://github.com/momenbasel/timenest)
+> that fixes Samba and user management when deployed on Docker/Portainer
+> (smbd `--log-stdout` crash on Samba 4.17, wildcard `include` not loading
+> shares, POSIX users lost on redeploy, web UI showing 0 users, quota editing).
+> Images: `ghcr.io/sebaf-26/hydranest-{samba,avahi,web}`. Portainer:
+> [`docker-compose.portainer.yml`](docker-compose.portainer.yml). See
+> [CHANGELOG.md](CHANGELOG.md).
+
 <div align="center">
 
 <img src="https://raw.githubusercontent.com/momenbasel/timenest/main/docs/social-preview.png?v=2" alt="TimeNest - network Time Machine server for Mac mini, Raspberry Pi, and any Linux home server" width="900">
