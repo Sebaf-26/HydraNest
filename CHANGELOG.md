@@ -4,6 +4,17 @@ HydraNest è un fork di [momenbasel/timenest](https://github.com/momenbasel/time
 (server Time Machine su Samba + Avahi + Web UI) con le correzioni emerse
 installandolo su Proxmox + Portainer.
 
+## v0.3.0 — 2026-10-08
+
+### Web UI
+- **Storage Usage** (Overview) parla solo dei backup: il totale è lo spazio
+  utilizzabile dai backup (backup + spazio libero), gli altri dati presenti
+  sul volume non vengono più mostrati ("Other data" rimosso).
+- Lo stato di salute e la pagina Quotas usano lo stesso calcolo ("Available
+  for backups" al posto della capacità totale del disco).
+- Rimossa la pagina **Storage** (e il codice SMART, `smartmontools` non è
+  più installato nell'immagine web).
+
 ## v0.2.1 — 2026-10-08
 
 ### Web UI

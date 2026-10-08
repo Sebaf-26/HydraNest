@@ -10,10 +10,8 @@
     <div class="hn-card p-5">
         <div class="font-medium">Storage Usage</div>
         {% if ov.disk %}
-        {% set total = ov.disk.total_bytes %}
         {% set c = 263.89 %}{# 2 * pi * 42 #}
-        {% set b_len = (ov.backups_bytes / total * c) if total else 0 %}
-        {% set o_len = (ov.other_bytes / total * c) if total else 0 %}
+        {% set b_len = (ov.backups_bytes / ov.capacity_bytes * c) if ov.capacity_bytes else 0 %}
         <div class="mt-4 flex items-center gap-8">
             <div class="relative h-40 w-40 shrink-0">
                 <svg viewBox="0 0 100 100" class="h-full w-full -rotate-90">
@@ -24,18 +22,14 @@
                         </linearGradient>
                     </defs>
                     <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="9"/>
-                    {% if o_len > 0 %}
-                    <circle cx="50" cy="50" r="42" fill="none" stroke="#475569" stroke-width="9"
-                            stroke-dasharray="{{ o_len }} {{ c }}" stroke-dashoffset="{{ -b_len }}"/>
-                    {% endif %}
                     {% if b_len > 0 %}
                     <circle cx="50" cy="50" r="42" fill="none" stroke="url(#g-backups)" stroke-width="9" stroke-linecap="round"
                             stroke-dasharray="{{ [b_len, 1.5] | max }} {{ c }}"/>
                     {% endif %}
                 </svg>
                 <div class="absolute inset-0 flex flex-col items-center justify-center">
-                    <div class="text-xl font-semibold">{{ ov.disk.used_bytes | bytes }}</div>
-                    <div class="text-[11px] text-ink-400">of {{ total | bytes }}</div>
+                    <div class="text-xl font-semibold">{{ ov.backups_bytes | bytes }}</div>
+                    <div class="text-[11px] text-ink-400">of {{ ov.capacity_bytes | bytes }}</div>
                 </div>
             </div>
             <dl class="flex-1 space-y-3 text-sm">
@@ -43,17 +37,11 @@
                     <dt class="flex items-center gap-2 text-ink-300"><span class="h-2 w-2 rounded-full bg-accent-400"></span>Backups</dt>
                     <dd class="font-medium">{{ ov.backups_bytes | bytes }}</dd>
                 </div>
-                {% if ov.other_bytes > 0 %}
-                <div class="flex items-center justify-between gap-4">
-                    <dt class="flex items-center gap-2 text-ink-300"><span class="h-2 w-2 rounded-full bg-slate-500"></span>Other data</dt>
-                    <dd class="font-medium">{{ ov.other_bytes | bytes }}</dd>
-                </div>
-                {% endif %}
                 <div class="flex items-center justify-between gap-4">
                     <dt class="flex items-center gap-2 text-ink-300"><span class="h-2 w-2 rounded-full bg-white/15"></span>Free</dt>
                     <dd class="font-medium">{{ ov.disk.free_bytes | bytes }}</dd>
                 </div>
-                <div class="pt-2 border-t border-white/5 text-xs text-ink-400">{{ ov.disk.percent }}% of the backup volume used</div>
+                <div class="pt-2 border-t border-white/5 text-xs text-ink-400">{{ ov.backup_pct }}% of the space available for backups used</div>
             </dl>
         </div>
         {% else %}

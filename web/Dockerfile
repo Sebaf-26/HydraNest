@@ -17,7 +17,7 @@ ARG DOCKER_CLI_VERSION=27.3.1
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
-        curl smartmontools ca-certificates tini; \
+        curl ca-certificates tini; \
     case "${TARGETARCH:-amd64}" in \
         amd64) dockerArch=x86_64 ;; \
         arm64) dockerArch=aarch64 ;; \

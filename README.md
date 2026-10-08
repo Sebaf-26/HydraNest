@@ -9,7 +9,7 @@ destination. It runs as one Docker stack:
 | :--------------- | :------------------------------------------------------------ |
 | `timenest-samba` | Samba 4 with `vfs_fruit`, one Time Machine share per user     |
 | `timenest-avahi` | Bonjour/mDNS, so Macs find the server on their own            |
-| `timenest-web`   | Admin web UI: overview, backups, Macs, users, quotas, storage |
+| `timenest-web`   | Admin web UI: overview, backups, Macs, users, quotas          |
 
 HydraNest is a fork of [momenbasel/timenest](https://github.com/momenbasel/timenest).
 It fixes the Samba and user-management problems found when running it on
@@ -134,12 +134,11 @@ If the server doesn't appear, in Finder use **Go -> Connect to Server**
 
 | Page | What it shows |
 | :--- | :------------ |
-| **Overview** | Storage donut (backups / other data / free), backup health, connected Macs, top users by quota usage, recent Time Machine snapshots |
+| **Overview** | Backup space donut (backups vs. free space; other data on the volume is ignored), backup health, connected Macs, top users by quota usage, recent Time Machine snapshots |
 | **Backups** | One card per Mac backup: model, size, snapshot count and list, verification state, last write |
 | **Clients** | Every Mac: online/offline, IP, last seen, last backup, status (up to date, backing up, overdue) |
 | **Users** | Create, edit (quota and password), remove |
 | **Quotas** | Usage bar per user, free space, inline quota edit, warning when quotas exceed the disk |
-| **Storage** | Backup volume usage (plus SMART health when the container can see the physical disk; on Proxmox check it from the host) |
 | **Settings** | Current configuration and Prometheus target |
 
 All data is real: Mac name and model come from the Time Machine bundle
@@ -148,7 +147,7 @@ snapshots from `SnapshotHistory.plist`, online status and IP from Samba's live
 sessions. The web container polls Samba every minute and remembers when each
 Mac was last seen (`DATA_PATH/web/clients.json`). **Backup health** turns
 amber when a Mac hasn't completed a backup in 7 days, a user is above 90% of
-the quota, or the disk is above 90% full, and red when Samba is down or the
+the quota, or the space available for backups is above 90% used, and red when Samba is down or the
 backup volume is missing.
 
 | Backups | Clients |
@@ -156,8 +155,8 @@ backup volume is missing.
 | <img src="docs/screenshots/07-backups.png" alt="Backups" width="100%"> | <img src="docs/screenshots/08-clients.png" alt="Clients" width="100%"> |
 | **Quotas** | **Users** |
 | <img src="docs/screenshots/09-quotas.png" alt="Quotas" width="100%"> | <img src="docs/screenshots/03-users.png" alt="Users" width="100%"> |
-| **Storage** | **Login** |
-| <img src="docs/screenshots/04-storage.png" alt="Storage" width="100%"> | <img src="docs/screenshots/01-login.png" alt="Login" width="100%"> |
+| **Settings** | **Login** |
+| <img src="docs/screenshots/05-settings.png" alt="Settings" width="100%"> | <img src="docs/screenshots/01-login.png" alt="Login" width="100%"> |
 
 ---
 

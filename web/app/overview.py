@@ -78,8 +78,21 @@ class Overview:
     health: Health
     disk: disks.DiskUsage | None
     backups_bytes: int
-    other_bytes: int
     live: LiveState
+
+    @property
+    def capacity_bytes(self) -> int:
+        """Space Time Machine can use: what backups take plus what is free.
+
+        Other data on the same volume is deliberately left out, so the
+        storage figures only talk about backups.
+        """
+        return self.backups_bytes + (self.disk.free_bytes if self.disk else 0)
+
+    @property
+    def backup_pct(self) -> float:
+        cap = self.capacity_bytes
+        return round(self.backups_bytes / cap * 100, 1) if cap else 0.0
 
     @property
     def online_clients(self) -> list[Client]:
@@ -173,16 +186,17 @@ def build(settings: Settings, users: list[TimeNestUser], live: LiveState) -> Ove
 
     disk = disks.usage(settings.backup_path)
     backups_bytes = sum(r.user.used_bytes for r in rows)
-    other_bytes = max((disk.used_bytes - backups_bytes) if disk else 0, 0)
+    free_bytes = disk.free_bytes if disk else 0
+    capacity = backups_bytes + free_bytes
+    backup_pct = (backups_bytes / capacity * 100) if capacity else 0.0
 
     return Overview(
         users=sorted(rows, key=lambda r: r.user.used_bytes, reverse=True),
         clients=clients,
         events=events,
-        health=_health(live, rows, clients, disk),
+        health=_health(live, rows, clients, disk, backup_pct),
         disk=disk,
         backups_bytes=backups_bytes,
-        other_bytes=other_bytes,
         live=live,
     )
 
@@ -204,6 +218,7 @@ def _health(
     rows: list[UserRow],
     clients: list[Client],
     disk: disks.DiskUsage | None,
+    backup_pct: float,
 ) -> Health:
     crit: list[str] = []
     warn: list[str] = []
@@ -211,10 +226,10 @@ def _health(
         crit.append("Samba is not responding")
     if disk is None:
         crit.append("Backup volume is not mounted")
-    elif disk.percent >= DISK_CRIT_PCT:
-        crit.append(f"Backup disk almost full ({disk.percent:.0f}%)")
-    elif disk.percent >= DISK_WARN_PCT:
-        warn.append(f"Backup disk {disk.percent:.0f}% full")
+    elif backup_pct >= DISK_CRIT_PCT:
+        crit.append(f"Backup space almost full ({backup_pct:.0f}%)")
+    elif backup_pct >= DISK_WARN_PCT:
+        warn.append(f"Backup space {backup_pct:.0f}% full")
     for c in clients:
         if c.status == "stale":
             warn.append(f"{c.name}: no backup for more than {STALE_DAYS} days")

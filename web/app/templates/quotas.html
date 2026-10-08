@@ -26,10 +26,10 @@
         <div class="text-xs text-ink-500 mt-1">{{ ((ov.backups_bytes / allocated * 100) | round(1)) if allocated else 0 }}% of allocated</div>
     </div>
     <div class="hn-card p-5">
-        <div class="text-xs uppercase tracking-wider text-ink-400">Disk capacity</div>
-        <div class="mt-2 text-3xl font-semibold">{{ ov.disk.total_bytes | bytes if ov.disk else '-' }}</div>
-        <div class="text-xs mt-1 {% if ov.disk and allocated > ov.disk.total_bytes %}text-amber-300{% else %}text-ink-500{% endif %}">
-            {% if ov.disk and allocated > ov.disk.total_bytes %}quotas exceed the disk: Time Machine may fill it{% else %}quotas fit on the disk{% endif %}
+        <div class="text-xs uppercase tracking-wider text-ink-400">Available for backups</div>
+        <div class="mt-2 text-3xl font-semibold">{{ ov.capacity_bytes | bytes if ov.disk else '-' }}</div>
+        <div class="text-xs mt-1 {% if ov.disk and allocated > ov.capacity_bytes %}text-amber-300{% else %}text-ink-500{% endif %}">
+            {% if ov.disk and allocated > ov.capacity_bytes %}quotas exceed the available space: Time Machine may fill it{% else %}quotas fit in the available space{% endif %}
         </div>
     </div>
 </div>

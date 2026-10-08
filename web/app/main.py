@@ -17,7 +17,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
-from . import __version__, disks, metrics, overview, samba_mgr, timemachine
+from . import __version__, metrics, overview, samba_mgr, timemachine
 from .monitor import Monitor
 from .auth import LoginDep, verify_login
 from .config import Settings, get_settings
@@ -319,25 +319,6 @@ async def users_delete(
     )
 
 
-@app.get("/disks", response_class=HTMLResponse)
-async def disks_page(request: Request, user: str = LoginDep) -> Response:
-    du = disks.usage(settings.backup_path)
-    # Probe common device paths. Missing devices simply show "unavailable".
-    smart_results = []
-    for dev in _probe_devices():
-        status_ = await disks.smart(dev)
-        if status_:
-            smart_results.append(status_)
-    return await _render(
-        request,
-        "disks.html",
-        "disks",
-        disk=du,
-        smart=smart_results,
-        backup_path=str(settings.backup_path),
-    )
-
-
 @app.get("/settings", response_class=HTMLResponse)
 async def settings_page(request: Request, user: str = LoginDep) -> Response:
     return await _render(
@@ -361,22 +342,3 @@ async def metrics_endpoint() -> Response:
         raise HTTPException(404, "metrics disabled")
     body = await metrics.render(settings, _mgr())
     return Response(body, media_type=metrics.CONTENT_TYPE)
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-def _probe_devices() -> list[str]:
-    """Enumerate likely disk device nodes in a sensible order.
-
-    On Raspberry Pi the backup drive is typically /dev/sda; on NUCs and
-    generic Linux boxes it is /dev/sdb; on Mac mini we skip because the
-    container cannot read raw disk devices through Docker Desktop.
-    """
-    import os
-    candidates = []
-    for p in ("/dev/sda", "/dev/sdb", "/dev/sdc", "/dev/nvme0n1", "/dev/nvme1n1"):
-        if os.path.exists(p):
-            candidates.append(p)
-    return candidates
