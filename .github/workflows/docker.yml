@@ -37,7 +37,7 @@ jobs:
       - uses: docker/metadata-action@v5
         id: meta
         with:
-          images: ${{ env.REGISTRY }}/${{ env.OWNER }}/timenest-samba
+          images: ${{ env.REGISTRY }}/${{ env.OWNER }}/hydranest-samba
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=branch
@@ -92,7 +92,7 @@ jobs:
       - uses: docker/metadata-action@v5
         id: meta
         with:
-          images: ${{ env.REGISTRY }}/${{ env.OWNER }}/timenest-avahi
+          images: ${{ env.REGISTRY }}/${{ env.OWNER }}/hydranest-avahi
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=branch
@@ -146,7 +146,7 @@ jobs:
       - uses: docker/metadata-action@v5
         id: meta
         with:
-          images: ${{ env.REGISTRY }}/${{ env.OWNER }}/timenest-web
+          images: ${{ env.REGISTRY }}/${{ env.OWNER }}/hydranest-web
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=branch

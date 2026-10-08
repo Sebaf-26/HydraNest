@@ -40,4 +40,59 @@ jobs:
           mkdir -p /tmp/etc/samba
           envsubst '${SERVER_NAME} ${DEVICE_MODEL} ${SMB_INTERFACES} ${BIND_INTERFACES_ONLY} ${SAMBA_LOG_LEVEL}' \
             < samba/smb.conf.template > /tmp/etc/samba/smb.conf
+          sudo mkdir -p /etc/samba
+          sudo tee /etc/samba/timenest-shares.conf >/dev/null <<'CONF'
+          # empty: no users in CI
+          CONF
           testparm -s /tmp/etc/samba/smb.conf
+
+  # HydraNest: end-to-end check of the Samba fixes (smbd starts, explicit
+  # share includes, users/shares survive a container recreate, quota edit).
+  samba-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build --target samba -t hydranest-samba:test .
+      - name: Users and shares survive a container recreate
+        run: |
+          set -euxo pipefail
+          HN=$(mktemp -d)
+          mkdir -p "$HN/backup" "$HN/samba" "$HN/shares.d"
+          start() {
+            docker run -d --name hn-samba \
+              -v "$HN/backup:/backup" \
+              -v "$HN/samba:/var/lib/samba" \
+              -v "$HN/shares.d:/etc/timenest/shares.d" \
+              hydranest-samba:test
+            for _ in $(seq 1 30); do
+              docker exec hn-samba pidof smbd >/dev/null 2>&1 && break
+              sleep 1
+            done
+            docker logs hn-samba
+            docker exec hn-samba pidof smbd
+          }
+          shares() { docker exec hn-samba testparm -s 2>/dev/null; }
+          login() { docker exec hn-samba smbclient "//127.0.0.1/$1" -U "$1%S3cret-pass" -c ls; }
+
+          start
+          docker exec hn-samba create-user.sh alice S3cret-pass 100
+          docker exec hn-samba create-user.sh bob S3cret-pass 200
+          shares | grep -F '[alice]'
+          shares | grep -F '[bob]'
+          docker exec hn-samba set-quota.sh alice 300
+          grep -F 'fruit:time machine max size = 300G' "$HN/shares.d/alice.conf"
+          login alice
+
+          ALICE_UID=$(stat -c %u "$HN/backup/alice")
+          docker rm -f hn-samba
+          start
+          test "$(docker exec hn-samba id -u alice)" = "$ALICE_UID"
+          docker exec hn-samba id bob
+          shares | grep -F '[alice]'
+          shares | grep -F '[bob]'
+          login alice
+          login bob
+
+          docker exec hn-samba delete-user.sh bob
+          if shares | grep -F '[bob]'; then exit 1; fi
+          docker rm -f hn-samba

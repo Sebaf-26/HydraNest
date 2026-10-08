@@ -15,6 +15,11 @@
     User <span class="font-semibold">{{ deleted }}</span> removed.
 </div>
 {% endif %}
+{% if updated %}
+<div class="mb-6 rounded-md bg-emerald-500/10 border border-emerald-500/30 px-4 py-2 text-sm text-emerald-300">
+    User <span class="font-semibold">{{ updated }}</span> updated.
+</div>
+{% endif %}
 {% if error %}
 <div class="mb-6 rounded-md bg-red-500/10 border border-red-500/30 px-4 py-2 text-sm text-red-300">
     {{ error }}
@@ -47,7 +52,27 @@
                     <td class="px-5 py-3">{{ u.used_bytes | bytes }}</td>
                     <td class="px-5 py-3">{{ u.quota_gb }} GB</td>
                     <td class="px-5 py-3 text-ink-300">{{ u.last_backup_ts | ts }}</td>
-                    <td class="px-5 py-3 text-right">
+                    <td class="px-5 py-3 text-right whitespace-nowrap">
+                        <details class="inline-block relative text-left mr-3">
+                            <summary class="cursor-pointer text-xs text-accent-400 hover:text-accent-300 list-none">Edit</summary>
+                            <form method="post" action="/users/{{ u.username }}/update"
+                                  class="absolute right-0 z-10 mt-2 w-64 rounded-lg border border-ink-700 bg-ink-900 p-4 space-y-3 shadow-xl">
+                                <label class="block">
+                                    <span class="text-xs uppercase tracking-wider text-ink-400">Quota (GB)</span>
+                                    <input name="quota_gb" type="number" value="{{ u.quota_gb or default_quota_gb }}" min="10" max="100000" required
+                                           class="mt-1 block w-full rounded-md border-ink-700 bg-ink-800 text-ink-100 px-3 py-2 focus:border-accent-500 focus:ring-accent-500 focus:outline-none text-sm">
+                                </label>
+                                <label class="block">
+                                    <span class="text-xs uppercase tracking-wider text-ink-400">New password</span>
+                                    <input name="password" type="password" minlength="8" autocomplete="new-password"
+                                           placeholder="leave empty to keep"
+                                           class="mt-1 block w-full rounded-md border-ink-700 bg-ink-800 text-ink-100 px-3 py-2 focus:border-accent-500 focus:ring-accent-500 focus:outline-none text-sm">
+                                </label>
+                                <button class="w-full rounded-md bg-accent-500 hover:bg-accent-400 text-ink-950 font-semibold py-1.5 text-sm transition">
+                                    Save
+                                </button>
+                            </form>
+                        </details>
                         <form method="post" action="/users/{{ u.username }}/delete"
                               onsubmit="return confirm('Remove {{ u.username }}? Backup data will be kept.');"
                               class="inline">

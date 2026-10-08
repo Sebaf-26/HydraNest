@@ -20,6 +20,10 @@ class Settings(BaseSettings):
 
     samba_container: str = Field(default="timenest-samba", alias="SAMBA_CONTAINER")
     samba_data_path: Path = Field(default=Path("/samba"), alias="SAMBA_DATA_PATH")
+    # Directory with the per-user <name>.conf share fragments written by the
+    # samba container. Must be the same host directory the samba container
+    # mounts at /etc/timenest/shares.d, or the user list stays empty.
+    shares_path: Path = Field(default=Path("/config/shares.d"), alias="SHARES_PATH")
 
     enable_metrics: bool = Field(default=True, alias="ENABLE_METRICS")
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")

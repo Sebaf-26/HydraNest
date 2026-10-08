@@ -42,8 +42,6 @@ else
     log "leaving backup data at ${USER_DIR} untouched (pass --purge to wipe)"
 fi
 
-if pidof smbd >/dev/null; then
-    pkill -HUP smbd || true
-fi
+/usr/local/bin/reload-samba.sh
 
 log "done"

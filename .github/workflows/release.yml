@@ -1,8 +1,8 @@
 name: release
 
+# HydraNest: the macOS .pkg job needs upstream's self-hosted signing runner,
+# which this fork does not have, so tag pushes no longer trigger it.
 on:
-  push:
-    tags: ["v*"]
   workflow_dispatch:
     inputs:
       tag:

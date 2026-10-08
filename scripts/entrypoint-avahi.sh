@@ -17,9 +17,13 @@ export SERVER_NAME DEVICE_MODEL
 
 mkdir -p /etc/avahi/services
 
+TEMPLATE=/usr/share/timenest/timenest.service.template
+[[ -f "$TEMPLATE" ]] || TEMPLATE=/etc/timenest/timenest.service.template
+[[ -f "$TEMPLATE" ]] || die "timenest.service template not found"
+
 # shellcheck disable=SC2016  # single quotes intentional; envsubst reads literal ${VAR} list
 envsubst '${SERVER_NAME} ${DEVICE_MODEL}' \
-    < /etc/timenest/timenest.service.template \
+    < "$TEMPLATE" \
     > /etc/avahi/services/timenest.service
 
 # Strip out any pre-existing stock services so we don't double-advertise.

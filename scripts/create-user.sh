@@ -76,10 +76,7 @@ EOF
 
 log "wrote ${SHARE_CONF} (quota ${QUOTA_GB}G)"
 
-# Reload Samba in place (SIGHUP). No restart required.
-if pidof smbd >/dev/null; then
-    log "reloading smbd"
-    pkill -HUP smbd || true
-fi
+# Re-sync explicit includes and reload Samba in place. No restart required.
+/usr/local/bin/reload-samba.sh
 
 log "done"

@@ -70,12 +70,25 @@ class SambaManager:
             args.append("--purge")
         await self._exec(*args)
 
+    async def update_user(
+        self, username: str, quota_gb: int, password: str | None = None
+    ) -> None:
+        self._validate_username(username)
+        if quota_gb < 10:
+            raise ValueError("quota must be at least 10 GB")
+        if password:
+            # create-user.sh is idempotent: rotates the password and rewrites
+            # the share fragment with the new quota.
+            await self.create_user(username, password, quota_gb)
+        else:
+            await self._exec("/usr/local/bin/set-quota.sh", username, str(quota_gb))
+
     def list_users(self) -> list[TimeNestUser]:
-        shares_dir = self.settings.samba_data_path / ".." / "config" / "shares.d"
-        # When the web container mounts `./data/config` as /config we fall
-        # back to that path. Keep resolution loose.
+        # Keep resolution loose: explicit SHARES_PATH first, then the layouts
+        # older stacks used.
         for candidate in (
-            shares_dir.resolve(),
+            self.settings.shares_path,
+            (self.settings.samba_data_path / ".." / "config" / "shares.d").resolve(),
             Path("/etc/timenest/shares.d"),
             Path("/config/shares.d"),
             Path("/data/config/shares.d"),
@@ -84,6 +97,11 @@ class SambaManager:
                 shares_dir = candidate
                 break
         else:
+            log.warning(
+                "no shares.d directory found (SHARES_PATH=%s); mount the samba "
+                "container's shares.d into the web container",
+                self.settings.shares_path,
+            )
             return []
 
         users: list[TimeNestUser] = []

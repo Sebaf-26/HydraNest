@@ -160,6 +160,7 @@ def users_page(request: Request, user: str = LoginDep) -> Response:
             "default_quota_gb": settings.default_quota_gb,
             "created": request.query_params.get("created"),
             "deleted": request.query_params.get("deleted"),
+            "updated": request.query_params.get("updated"),
             "error": request.query_params.get("error"),
         },
     )
@@ -183,6 +184,37 @@ async def users_create(
     log.info("created user '%s' (%d GB quota)", username, quota_gb)
     return RedirectResponse(
         f"/users?created={username}",
+        status_code=status.HTTP_303_SEE_OTHER,
+    )
+
+
+@app.post("/users/{username}/update")
+async def users_update(
+    username: str,
+    quota_gb: int = Form(...),
+    password: str = Form(default=""),
+    user: str = LoginDep,
+) -> Response:
+    if password and len(password) < 8:
+        return RedirectResponse(
+            "/users?error=password must be at least 8 characters",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+    try:
+        await _mgr().update_user(username, quota_gb, password or None)
+    except (ValueError, RuntimeError) as exc:
+        return RedirectResponse(
+            f"/users?error={exc}",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+    log.info(
+        "updated user '%s' (%d GB quota, password %s)",
+        username,
+        quota_gb,
+        "changed" if password else "unchanged",
+    )
+    return RedirectResponse(
+        f"/users?updated={username}",
         status_code=status.HTTP_303_SEE_OTHER,
     )
 

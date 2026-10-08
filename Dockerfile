@@ -32,17 +32,26 @@ RUN apt-get update \
         procps \
  && rm -rf /var/lib/apt/lists/*
 
-COPY samba/smb.conf.template /etc/timenest/smb.conf.template
+# Templates live outside /etc/timenest so a volume mounted there can never
+# hide them (HydraNest fix: "smb.conf.template: No such file or directory").
+COPY samba/smb.conf.template /usr/share/timenest/smb.conf.template
 COPY scripts/entrypoint-samba.sh /usr/local/bin/entrypoint-samba.sh
 COPY scripts/create-user.sh     /usr/local/bin/create-user.sh
 COPY scripts/delete-user.sh     /usr/local/bin/delete-user.sh
+COPY scripts/set-quota.sh       /usr/local/bin/set-quota.sh
+COPY scripts/sync-shares.sh     /usr/local/bin/sync-shares.sh
+COPY scripts/reload-samba.sh    /usr/local/bin/reload-samba.sh
 RUN chmod +x /usr/local/bin/entrypoint-samba.sh \
              /usr/local/bin/create-user.sh \
-             /usr/local/bin/delete-user.sh
+             /usr/local/bin/delete-user.sh \
+             /usr/local/bin/set-quota.sh \
+             /usr/local/bin/sync-shares.sh \
+             /usr/local/bin/reload-samba.sh \
+ && mkdir -p /etc/timenest/shares.d
 
 EXPOSE 445
 
-VOLUME ["/backup", "/var/lib/samba", "/etc/timenest"]
+VOLUME ["/backup", "/var/lib/samba", "/etc/timenest/shares.d"]
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["/usr/local/bin/entrypoint-samba.sh"]
@@ -66,7 +75,7 @@ RUN apt-get update \
         ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
-COPY avahi/timenest.service.template /etc/timenest/timenest.service.template
+COPY avahi/timenest.service.template /usr/share/timenest/timenest.service.template
 COPY avahi/avahi-daemon.conf /etc/avahi/avahi-daemon.conf
 COPY scripts/entrypoint-avahi.sh /usr/local/bin/entrypoint-avahi.sh
 RUN chmod +x /usr/local/bin/entrypoint-avahi.sh
