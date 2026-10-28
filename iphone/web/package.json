@@ -1,0 +1,27 @@
+{
+  "name": "airvault-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "AirVault web UI — a homelab dashboard for wireless iPhone backups to a NAS.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-check --tsconfig ./tsconfig.json"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "@tailwindcss/vite": "^4.3.3",
+    "daisyui": "^5.7.46",
+    "svelte": "^5.57.1",
+    "svelte-check": "^4.7.6",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.1"
+  },
+  "dependencies": {
+    "@lucide/svelte": "^1.48.0",
+    "svelte-spa-router": "^5.1.1"
+  }
+}

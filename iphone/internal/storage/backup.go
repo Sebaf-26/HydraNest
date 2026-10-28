@@ -1,0 +1,160 @@
+package storage
+
+import (
+	"context"
+
+	"github.com/wizier/airvault/internal/model"
+
+	"github.com/jmoiron/sqlx"
+)
+
+// backup_sources caches each source's reachable bytes; no row means the size is
+// unknown until a collection measures it.
+type BackupRepo struct{ s *Store }
+
+func (r *BackupRepo) InsertSnapshot(ctx context.Context, backup model.Backup) error {
+	_, err := sqlx.NamedExecContext(ctx, r.s.ext(), `
+		INSERT INTO backups
+			(id, source_udid, size_bytes, transferred_bytes,
+			 encrypted, ios_version, device_name, product_type, created_at, started_at,
+			 damage, damaged_files)
+		VALUES
+			(:id, :source_udid, :size_bytes, :transferred_bytes,
+			 :encrypted, :ios_version, :device_name, :product_type, :created_at, :started_at,
+			 :damage, :damaged_files)`,
+		backup)
+	return wrap(err, "insert backup snapshot")
+}
+
+// SetDamage reports whether the row's damage changed.
+func (r *BackupRepo) SetDamage(ctx context.Context, source, id, damage string, damagedFiles int) (bool, error) {
+	result, err := r.s.ext().ExecContext(ctx, `
+		UPDATE backups SET damage = ?, damaged_files = ?
+		WHERE id = ? AND source_udid = ? AND (damage != ? OR damaged_files != ?)`,
+		damage, damagedFiles, id, source, damage, damagedFiles)
+	if err != nil {
+		return false, wrap(err, "set backup damage")
+	}
+	changed, err := result.RowsAffected()
+	return changed > 0, wrap(err, "set backup damage")
+}
+
+func (r *BackupRepo) MarkVerified(ctx context.Context, source string, at int64) error {
+	_, err := r.s.ext().ExecContext(ctx,
+		`UPDATE backups SET verified_at = ? WHERE source_udid = ?`, at, source)
+	return wrap(err, "mark source verified")
+}
+
+func (r *BackupRepo) DeleteSnapshot(ctx context.Context, source, id string) error {
+	_, err := r.s.ext().ExecContext(ctx,
+		`DELETE FROM backups WHERE id = ? AND source_udid = ?`, id, source)
+	return wrap(err, "delete backup snapshot")
+}
+
+func (r *BackupRepo) DeleteSourceSnapshots(ctx context.Context, source string) error {
+	_, err := r.s.ext().ExecContext(ctx,
+		`DELETE FROM backups WHERE source_udid = ?`, source)
+	return wrap(err, "delete source snapshots")
+}
+
+func (r *BackupRepo) Get(ctx context.Context, id string) (*model.Backup, error) {
+	return getOne[model.Backup](ctx, r.s.ext(),
+		`SELECT * FROM backups WHERE id = ?`, id)
+}
+
+func (r *BackupRepo) SnapshotSources(ctx context.Context) (map[string]string, error) {
+	rows, err := listOf[struct {
+		ID     string `db:"id"`
+		Source string `db:"source_udid"`
+	}](ctx, r.s.ext(), `SELECT id, source_udid FROM backups`)
+	if err != nil {
+		return nil, wrap(err, "list catalog snapshot sources")
+	}
+	index := make(map[string]string, len(rows))
+	for _, row := range rows {
+		index[row.ID] = row.Source
+	}
+	return index, nil
+}
+
+func (r *BackupRepo) ListCompleteBySource(ctx context.Context, source string) ([]model.Backup, error) {
+	return listOf[model.Backup](ctx, r.s.ext(), `
+		SELECT * FROM backups
+		WHERE source_udid = ?
+		ORDER BY created_at DESC, id DESC`, source)
+}
+
+const listCompleteLimit = 1000
+
+// No join on devices, so snapshots from forgotten phones remain selectable as
+// restore sources.
+func (r *BackupRepo) ListComplete(ctx context.Context) ([]model.Backup, error) {
+	return listOf[model.Backup](ctx, r.s.ext(), `
+		SELECT * FROM backups
+		ORDER BY created_at DESC, id DESC
+		LIMIT ?`, listCompleteLimit)
+}
+
+// Backups hold hundreds of thousands of files, so a request never walks
+// manifests; that accounting belongs to the mutation and reconciliation paths.
+type SourceSummary struct {
+	SourceUDID       string `db:"source_udid"`
+	RestorePoints    int    `db:"restore_points"`
+	LatestRestorable *int64 `db:"latest_restorable_at"`
+	DiskBytes        *int64 `db:"disk_bytes"`
+	DeviceName       string `db:"device_name"`
+	ProductType      string `db:"product_type"`
+	IOSVersion       string `db:"ios_version"`
+}
+
+// Nil DiskBytes means the size is unknown, never a fabricated zero.
+func (r *BackupRepo) SummaryBySource(ctx context.Context) (map[string]SourceSummary, error) {
+	rows, err := listOf[SourceSummary](ctx, r.s.ext(), `
+		SELECT summary.source_udid, summary.restore_points,
+			summary.latest_restorable_at, summary.device_name,
+			summary.product_type, summary.ios_version, source.disk_bytes
+		FROM (
+			SELECT source_udid, device_name, product_type, ios_version,
+				COUNT(*) OVER (PARTITION BY source_udid) AS restore_points,
+				MAX(CASE WHEN damage = '' THEN created_at END)
+					OVER (PARTITION BY source_udid) AS latest_restorable_at,
+				ROW_NUMBER() OVER (
+					PARTITION BY source_udid ORDER BY created_at DESC, id DESC
+				) AS rn
+			FROM backups
+		) AS summary
+		LEFT JOIN backup_sources AS source ON source.source_udid = summary.source_udid
+		WHERE summary.rn = 1`)
+	if err != nil {
+		return nil, wrap(err, "summarize backup sources")
+	}
+	out := make(map[string]SourceSummary, len(rows))
+	for _, row := range rows {
+		out[row.SourceUDID] = row
+	}
+	return out, nil
+}
+
+func (r *BackupRepo) SetSourceFootprint(ctx context.Context, source string, diskBytes int64) error {
+	_, err := r.s.ext().ExecContext(ctx, `
+		INSERT INTO backup_sources (source_udid, disk_bytes) VALUES (?, ?)
+		ON CONFLICT(source_udid) DO UPDATE SET disk_bytes = excluded.disk_bytes`,
+		source, diskBytes)
+	return wrap(err, "set source footprint")
+}
+
+// For a change whose effect on disk the caller cannot price; the next
+// collection measures it.
+func (r *BackupRepo) ForgetSourceFootprint(ctx context.Context, source string) error {
+	_, err := r.s.ext().ExecContext(ctx,
+		`DELETE FROM backup_sources WHERE source_udid = ?`, source)
+	return wrap(err, "forget source footprint")
+}
+
+// No size may outlive the snapshots it was measured from.
+func (r *BackupRepo) DropUnreferencedFootprints(ctx context.Context) error {
+	_, err := r.s.ext().ExecContext(ctx, `
+		DELETE FROM backup_sources
+		WHERE source_udid NOT IN (SELECT source_udid FROM backups)`)
+	return wrap(err, "drop unreferenced source footprints")
+}
