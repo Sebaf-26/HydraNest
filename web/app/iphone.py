@@ -71,6 +71,17 @@ class Phone:
 
 
 @dataclass(slots=True)
+class PhoneEvent:
+    """A phone's latest backup, for the Overview's recent backups."""
+
+    name: str
+    udid: str
+    ts: int
+    status: str  # success | running
+    is_phone: bool = True
+
+
+@dataclass(slots=True)
 class Phones:
     configured: bool
     reachable: bool = False
@@ -79,6 +90,13 @@ class Phones:
     @property
     def total_bytes(self) -> int:
         return sum(p.disk_bytes or 0 for p in self.phones)
+
+    @property
+    def events(self) -> list[PhoneEvent]:
+        return [
+            PhoneEvent(p.name, p.udid, p.last_backup_ts, "running" if p.status == "running" else "success")
+            for p in self.phones if p.last_backup_ts
+        ]
 
     @property
     def restore_points(self) -> int:

@@ -4,6 +4,20 @@ HydraNest è un fork di [momenbasel/timenest](https://github.com/momenbasel/time
 (server Time Machine su Samba + Avahi + Web UI) con le correzioni emerse
 installandolo su Proxmox + Portainer.
 
+## v0.5.1 — 2026-10-28
+
+### Overview riordinata
+- **Storage Usage** divide i backup tra Mac (Time Machine) e iPhone: il
+  cerchio mostra la quota di ciascuno, la legenda anche lo spazio libero e la
+  percentuale usata.
+- **Devices**: un'unica lista con tutti i Mac e gli iPhone (nome, modello,
+  utente o iOS, online o ultima volta visto, ultimo backup, spazio e quota,
+  stato). Sostituisce le card «Connected Macs» e «Top Users by Usage», che
+  restano come pagine Clients e Quotas.
+- **Recent Backups** mette insieme gli snapshot dei Mac e i backup degli
+  iPhone, cinque righe.
+- Backup Health non cambia.
+
 ## v0.5.0 — 2026-10-28
 
 ### Sezione iPhone dentro HydraNest

@@ -4,44 +4,63 @@
 {% block heading %}Overview{% endblock %}
 {% block content %}
 
+{% set phone_list = phones.phones if phones.reachable else [] %}
+{% set mac_bytes = ov.backups_bytes %}
+{% set phone_bytes = phones.total_bytes if phones.reachable else 0 %}
+
 <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
 
-    {# ---------------- Storage usage ---------------- #}
+    {# ---------------- Storage usage: the ring splits the backups between Macs
+         and iPhones (next to tens of TB free they would be slivers); free space
+         is in the legend ---------------- #}
     <div class="hn-card p-5">
         <div class="font-medium">Storage Usage</div>
         {% if ov.disk %}
         {% set c = 263.89 %}{# 2 * pi * 42 #}
-        {% set b_len = (ov.backups_bytes / ov.capacity_bytes * c) if ov.capacity_bytes else 0 %}
+        {% set cap = mac_bytes + phone_bytes + ov.disk.free_bytes %}
+        {% set used = mac_bytes + phone_bytes %}
+        {% set m_len = (mac_bytes / used * c) if used else 0 %}
+        {% set p_len = (phone_bytes / used * c) if used else 0 %}
         <div class="mt-4 flex items-center gap-8">
             <div class="relative h-40 w-40 shrink-0">
                 <svg viewBox="0 0 100 100" class="h-full w-full -rotate-90">
                     <defs>
-                        <linearGradient id="g-backups" x1="0" y1="0" x2="1" y2="1">
+                        <linearGradient id="g-macs" x1="0" y1="0" x2="1" y2="1">
                             <stop offset="0%" stop-color="#5ee0f5"/>
                             <stop offset="100%" stop-color="#3b82f6"/>
                         </linearGradient>
                     </defs>
                     <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="9"/>
-                    {% if b_len > 0 %}
-                    <circle cx="50" cy="50" r="42" fill="none" stroke="url(#g-backups)" stroke-width="9" stroke-linecap="round"
-                            stroke-dasharray="{{ [b_len, 1.5] | max }} {{ c }}"/>
+                    {% if p_len > 0 %}
+                    <circle cx="50" cy="50" r="42" fill="none" stroke="#a78bfa" stroke-width="9"
+                            stroke-dasharray="{{ [p_len, 1.5] | max }} {{ c }}" stroke-dashoffset="{{ -m_len }}"/>
+                    {% endif %}
+                    {% if m_len > 0 %}
+                    <circle cx="50" cy="50" r="42" fill="none" stroke="url(#g-macs)" stroke-width="9"
+                            stroke-dasharray="{{ [m_len, 1.5] | max }} {{ c }}"/>
                     {% endif %}
                 </svg>
                 <div class="absolute inset-0 flex flex-col items-center justify-center">
-                    <div class="text-xl font-semibold">{{ ov.backups_bytes | bytes }}</div>
-                    <div class="text-[11px] text-ink-400">of {{ ov.capacity_bytes | bytes }}</div>
+                    <div class="text-xl font-semibold">{{ used | bytes }}</div>
+                    <div class="text-[11px] text-ink-400">of backups</div>
                 </div>
             </div>
             <dl class="flex-1 space-y-3 text-sm">
                 <div class="flex items-center justify-between gap-4">
-                    <dt class="flex items-center gap-2 text-ink-300"><span class="h-2 w-2 rounded-full bg-accent-400"></span>Backups</dt>
-                    <dd class="font-medium">{{ ov.backups_bytes | bytes }}</dd>
+                    <dt class="flex items-center gap-2 text-ink-300"><span class="h-2 w-2 rounded-full bg-accent-400"></span>Macs <span class="text-xs text-ink-500">Time Machine</span></dt>
+                    <dd class="font-medium">{{ mac_bytes | bytes }} <span class="ml-1 text-xs font-normal text-ink-500">{{ ((mac_bytes / used * 100) if used else 0) | round | int }}%</span></dd>
                 </div>
+                {% if phones.configured %}
+                <div class="flex items-center justify-between gap-4">
+                    <dt class="flex items-center gap-2 text-ink-300"><span class="h-2 w-2 rounded-full bg-violet-400"></span>iPhones</dt>
+                    <dd class="font-medium">{% if phones.reachable %}{{ phone_bytes | bytes }} <span class="ml-1 text-xs font-normal text-ink-500">{{ ((phone_bytes / used * 100) if used else 0) | round | int }}%</span>{% else %}-{% endif %}</dd>
+                </div>
+                {% endif %}
                 <div class="flex items-center justify-between gap-4">
                     <dt class="flex items-center gap-2 text-ink-300"><span class="h-2 w-2 rounded-full bg-white/15"></span>Free</dt>
                     <dd class="font-medium">{{ ov.disk.free_bytes | bytes }}</dd>
                 </div>
-                <div class="pt-2 border-t border-white/5 text-xs text-ink-400">{{ ov.backup_pct }}% of the space available for backups used</div>
+                <div class="pt-2 border-t border-white/5 text-xs text-ink-400">{{ ((used / cap * 100) if cap else 0) | round(1) }}% of {{ cap | bytes }} available for backups used</div>
             </dl>
         </div>
         {% else %}
@@ -86,113 +105,106 @@
         </div>
     </div>
 
-    {# ---------------- Connected Macs ---------------- #}
-    <div class="hn-card">
-        {{ ui.card_head('Connected Macs', 'live SMB sessions and last seen', '/clients', 'All clients') }}
-        <div class="px-5 pb-2 flex items-end justify-between">
-            <div class="flex items-baseline gap-2">
-                <span class="text-4xl font-semibold">{{ ov.online_clients | length }}</span>
-                <span class="text-sm {% if ov.online_clients %}text-emerald-400{% else %}text-ink-400{% endif %}">online</span>
-            </div>
-            <div class="flex -space-x-2 text-ink-500">
-                {{ ui.mac_icon(true, 'h-10 w-10') }}{{ ui.mac_icon(false, 'h-10 w-10') }}
-            </div>
-        </div>
-        <ul class="px-5 pb-4 divide-y divide-white/5">
-            {% for c in ov.clients[:5] %}
-            <li class="py-2.5 flex items-center justify-between text-sm">
-                <span class="flex items-center gap-2.5 min-w-0">
-                    {{ ui.online_dot(c.online) }}
-                    <span class="truncate">{{ c.name }}</span>
-                    <span class="text-xs text-ink-500 truncate">{{ c.user }}</span>
-                </span>
-                <span class="text-xs text-ink-400 shrink-0">{% if c.online %}online now{% else %}{{ c.last_seen_ts | ago if c.last_seen_ts else 'not seen yet' }}{% endif %}</span>
-            </li>
-            {% else %}
-            <li class="py-6 text-center text-sm text-ink-500">No Mac has connected yet.</li>
-            {% endfor %}
-        </ul>
-    </div>
-
-    {# ---------------- Top users by usage ---------------- #}
-    <div class="hn-card">
-        {{ ui.card_head('Top Users by Usage', 'share of each quota', '/quotas', 'Quotas') }}
-        <ul class="px-5 pb-5 space-y-4">
-            {% for r in ov.users[:5] %}
-            <li>
-                <div class="flex items-center justify-between text-sm">
-                    <span>{{ r.user.username }}</span>
-                    <span class="font-medium">{{ r.user.used_bytes | bytes }}</span>
-                </div>
-                <div class="mt-1.5 flex items-center gap-3">
-                    <div class="flex-1">{{ ui.bar(r.pct) }}</div>
-                    <span class="text-xs text-ink-400 whitespace-nowrap text-right">{{ r.pct }}% of {{ r.user.quota_gb }} GB</span>
-                </div>
-            </li>
-            {% else %}
-            <li class="py-6 text-center text-sm text-ink-500">No users yet. <a href="/users" class="text-accent-400">Create one &rarr;</a></li>
-            {% endfor %}
-        </ul>
-    </div>
-
 </div>
 
-{# ---------------- iPhones ---------------- #}
-{% if phones.configured %}
+{# ---------------- Devices: every Mac and iPhone ---------------- #}
+{% set online = (ov.clients | selectattr('online') | list | length) + (phone_list | selectattr('online') | list | length) %}
+{% set n_macs = ov.clients | length %}
+{% set n_phones = phone_list | length %}
+{% set summary = n_macs ~ (' Mac' if n_macs == 1 else ' Macs')
+    ~ ((' · ' ~ n_phones ~ (' iPhone' if n_phones == 1 else ' iPhones')) if phones.configured else '')
+    ~ ' · ' ~ online ~ ' online' %}
 <div class="hn-card mt-5">
-    {{ ui.card_head('iPhones', 'backed up at home and, through Tailscale, from any Wi-Fi', '/iphone', 'iPhone section') }}
-    {% if not phones.reachable %}
-    <div class="px-5 pb-5 text-sm text-amber-300">The iPhone service is not reachable.</div>
-    {% else %}
+    {{ ui.card_head('Devices', summary) }}
     <table class="w-full text-sm">
+        <thead class="text-[11px] uppercase tracking-wider text-ink-500">
+            <tr class="border-b border-white/5">
+                <th class="px-5 pb-2 text-left font-medium">Device</th>
+                <th class="px-5 pb-2 text-left font-medium hidden md:table-cell">Connection</th>
+                <th class="px-5 pb-2 text-left font-medium">Last backup</th>
+                <th class="px-5 pb-2 text-right font-medium hidden md:table-cell">Size</th>
+                <th class="px-5 pb-2 text-right font-medium">Status</th>
+            </tr>
+        </thead>
         <tbody class="divide-y divide-white/5">
-        {% for p in phones.phones %}
-            <tr class="hover:bg-white/[0.02]">
+        {% for c in ov.clients %}
+            {% set row = ov.users | selectattr('user.username', 'equalto', c.user) | first %}
+            <tr>
                 <td class="px-5 py-3">
-                    <a href="/iphone?d={{ p.udid | urlencode }}" class="flex items-center gap-3">
-                        <span class="text-ink-400">{{ ui.phone_icon() }}</span>
-                        <span>
-                            <span class="block">{{ p.name }}</span>
-                            <span class="block text-xs text-ink-500">{{ p.model or 'iPhone' }}{% if p.ios %} &middot; iOS {{ p.ios }}{% endif %}</span>
+                    <a href="/backups" class="flex items-center gap-3">
+                        <span class="text-ink-400">{{ ui.mac_icon(c.is_laptop) }}</span>
+                        <span class="min-w-0">
+                            <span class="block truncate">{{ c.name }}</span>
+                            <span class="block text-xs text-ink-500 truncate">{{ c.model }} &middot; {{ c.user }}</span>
                         </span>
                     </a>
                 </td>
                 <td class="px-5 py-3 hidden md:table-cell">
-                    <span class="flex items-center gap-2 text-ink-300">{{ ui.online_dot(p.online) }}{{ ui.connection_label(p.connection) }}</span>
+                    <span class="flex items-center gap-2 text-ink-300">{{ ui.online_dot(c.online) }}{% if c.online %}online{% else %}{{ c.last_seen_ts | ago if c.last_seen_ts else 'not seen yet' }}{% endif %}</span>
+                </td>
+                <td class="px-5 py-3 text-ink-300">{{ c.last_backup_ts | when if c.last_backup_ts else 'never' }}</td>
+                <td class="px-5 py-3 text-right hidden md:table-cell">
+                    <span class="font-medium">{{ c.size_bytes | bytes }}</span>
+                    {% if row %}<span class="block text-[11px] text-ink-500">{{ row.pct }}% of {{ row.user.quota_gb }} GB</span>{% endif %}
+                </td>
+                <td class="px-5 py-3 text-right">{{ ui.status_chip(c.status) }}</td>
+            </tr>
+        {% endfor %}
+        {% for p in phone_list %}
+            <tr>
+                <td class="px-5 py-3">
+                    <a href="/iphone?d={{ p.udid | urlencode }}" class="flex items-center gap-3">
+                        <span class="text-ink-400">{{ ui.phone_icon() }}</span>
+                        <span class="min-w-0">
+                            <span class="block truncate">{{ p.name }}</span>
+                            <span class="block text-xs text-ink-500 truncate">{{ p.model or 'iPhone' }}{% if p.ios %} &middot; iOS {{ p.ios }}{% endif %}</span>
+                        </span>
+                    </a>
+                </td>
+                <td class="px-5 py-3 hidden md:table-cell">
+                    <span class="flex items-center gap-2 text-ink-300">{{ ui.online_dot(p.online) }}{% if p.online %}{{ ui.connection_label(p.connection) }}{% else %}{{ p.last_seen_ts | ago if p.last_seen_ts else 'offline' }}{% endif %}</span>
                 </td>
                 <td class="px-5 py-3 text-ink-300">{% if p.status == 'running' %}backing up{% if p.progress is not none %} &middot; {{ p.progress }}%{% endif %}{% else %}{{ p.last_backup_ts | when if p.last_backup_ts else 'never' }}{% endif %}</td>
-                <td class="px-5 py-3 text-right font-medium hidden md:table-cell">{{ p.disk_bytes | bytes if p.disk_bytes is not none else '' }}</td>
+                <td class="px-5 py-3 text-right hidden md:table-cell">
+                    <span class="font-medium">{{ p.disk_bytes | bytes if p.disk_bytes is not none else '-' }}</span>
+                    <span class="block text-[11px] text-ink-500">{{ p.restore_points }} restore points</span>
+                </td>
                 <td class="px-5 py-3 text-right">{{ ui.status_chip(p.status) }}</td>
             </tr>
-        {% else %}
-            <tr><td class="px-5 py-8 text-center text-ink-500">No iPhone yet. <a href="/iphone" class="text-accent-400">Pair one over USB &rarr;</a></td></tr>
         {% endfor %}
+        {% if phones.configured and not phones.reachable %}
+            <tr><td colspan="5" class="px-5 py-3 text-sm text-amber-300">The iPhone service is not reachable.</td></tr>
+        {% endif %}
+        {% if not ov.clients and not phone_list %}
+            <tr><td colspan="5" class="px-5 py-8 text-center text-ink-500">No devices yet. Add HydraNest as a Time Machine disk on a Mac{% if phones.configured %}, or pair an iPhone in the <a href="/iphone" class="text-accent-400">iPhone section</a>{% endif %}.</td></tr>
+        {% endif %}
         </tbody>
     </table>
-    {% endif %}
 </div>
-{% endif %}
 
-{# ---------------- Recent backups ---------------- #}
+{# ---------------- Recent backups: Mac snapshots and iPhone backups ---------------- #}
+{% set recent = (ov.events[:5] + phones.events) | sort(attribute='ts', reverse=True) %}
 <div class="hn-card mt-5">
-    {{ ui.card_head('Recent Backups', 'completed Time Machine snapshots', '/backups', 'All backups') }}
+    {{ ui.card_head('Recent Backups', 'Time Machine snapshots and iPhone backups', '/backups', 'All backups') }}
     <table class="w-full text-sm">
         <tbody class="divide-y divide-white/5">
-        {% for e in ov.events[:8] %}
+        {% for e in recent[:5] %}
             <tr>
                 <td class="px-5 py-3">
                     <span class="flex items-center gap-3">
-                        <span class="text-ink-400">{{ ui.mac_icon(e.is_laptop) }}</span>
-                        <span>{{ e.mac_name }}</span>
+                        {% if e.is_phone %}
+                        <span class="text-ink-400">{{ ui.phone_icon() }}</span><span>{{ e.name }}</span>
+                        {% else %}
+                        <span class="text-ink-400">{{ ui.mac_icon(e.is_laptop) }}</span><span>{{ e.mac_name }}</span>
+                        {% endif %}
                     </span>
                 </td>
-                <td class="px-5 py-3 text-ink-400 hidden md:table-cell">{{ e.user }}</td>
                 <td class="px-5 py-3 text-ink-300">{{ e.ts | when }}</td>
-                <td class="px-5 py-3 text-right font-medium">{{ e.bytes_copied | bytes if e.bytes_copied is not none else '' }}</td>
+                <td class="px-5 py-3 text-right font-medium hidden md:table-cell">{% if not e.is_phone and e.bytes_copied is not none %}{{ e.bytes_copied | bytes }}{% endif %}</td>
                 <td class="px-5 py-3 text-right">{{ ui.status_chip(e.status) }}</td>
             </tr>
         {% else %}
-            <tr><td class="px-5 py-8 text-center text-ink-500">No backups yet. Add HydraNest as a backup disk in Time Machine on your Mac.</td></tr>
+            <tr><td class="px-5 py-8 text-center text-ink-500">No backups yet.</td></tr>
         {% endfor %}
         </tbody>
     </table>
