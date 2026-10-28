@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     shares_path: Path = Field(default=Path("/config/shares.d"), alias="SHARES_PATH")
 
     # The iPhone container as this container reaches it (e.g.
-    # http://192.168.2.5:8089) and its Web UI token. HydraNest proxies its UI
+    # http://192.168.20.10:8089) and its Web UI token. HydraNest proxies its UI
     # under /iphone/app/ and reads its device list; the "iPhone" section is
     # shown only when the URL is set.
     iphone_url: str | None = Field(default=None, alias="IPHONE_URL")

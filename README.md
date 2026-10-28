@@ -27,7 +27,7 @@ Proxmox + Portainer. See [What the fork fixes](#what-the-fork-fixes) and the
 ### 1. Prepare the folders on the host
 
 ```bash
-mkdir -p /TRE_TB/timenest/backups /TRE_TB/timenest/data
+mkdir -p /srv/hydranest/backups /srv/hydranest/data
 ```
 
 Use any paths you like. `backups` holds the Time Machine data, `data` holds
@@ -48,8 +48,8 @@ The compose file only pulls prebuilt public images
 ### 3. Set the environment variables
 
 ```
-BACKUP_PATH=/TRE_TB/timenest/backups
-DATA_PATH=/TRE_TB/timenest/data
+BACKUP_PATH=/srv/hydranest/backups
+DATA_PATH=/srv/hydranest/data
 SERVER_NAME=TimeNest
 DEVICE_MODEL=TimeCapsule8,119
 ADMIN_USER=admin
@@ -163,7 +163,7 @@ Backup Health.
 | `IPHONE_CONFIG_PATH` | required           | Host folder for settings, database and pairing records (AirVault's `/config`) |
 | `IPHONE_BACKUP_PATH` | required           | Host folder for the iPhone backups (AirVault's `/backups`) |
 | `IPHONE_AUTH_TOKEN`  | empty              | iPhone service token, used by HydraNest to open the iPhone section for you; set it (when empty the `iphone` container prints a generated one in its log and the iPhone page asks for it) |
-| `IPHONE_URL`         | empty              | The `iphone` service as the web container reaches it, e.g. `http://192.168.2.6:8089` (its macvlan address: the request goes through your router to that LAN). Empty hides the iPhone section |
+| `IPHONE_URL`         | empty              | The `iphone` service as the web container reaches it, e.g. `http://192.168.20.10:8089` (its macvlan address: the request goes through your router to that LAN). Empty hides the iPhone section |
 | `TS_AUTHKEY`         | empty              | Tailscale auth key, first start only. Empty: the log of `hydranest-tailscale` shows a login link instead |
 | `IPHONE_TS_HOSTNAME` | `hydranest-iphone` | Machine name on the tailnet |
 | `TS_EXTRA_ARGS`      | empty              | Extra `tailscale up` flags, e.g. `--advertise-tags=tag:hydranest` |
@@ -269,7 +269,7 @@ docker exec timenest-samba pdbedit -L
 docker exec timenest-samba id sebaf
 
 # Share files on the host
-ls -la /TRE_TB/timenest/data/config/shares.d/
+ls -la /srv/hydranest/data/config/shares.d/
 
 # SMB login test
 docker exec -it timenest-samba smbclient //127.0.0.1/sebaf -U sebaf -c ls

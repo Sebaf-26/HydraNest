@@ -34,7 +34,7 @@ installandolo su Proxmox + Portainer.
   più di 7 giorni, l'ultimo backup fallito o il servizio iPhone non
   raggiungibile.
 - `IPHONE_URL` ora è l'indirizzo del container iPhone visto dal container web
-  (es. `http://192.168.2.5:8089`), e il container web riceve anche
+  (es. `http://192.168.20.10:8089`), e il container web riceve anche
   `IPHONE_AUTH_TOKEN`.
 - Interfaccia iPhone: percorsi relativi (funziona sia da sola sia sotto
   `/iphone/app/`); i testi del backup automatico non dicono più «at home».
@@ -149,7 +149,7 @@ installandolo su Proxmox + Portainer.
   `docker-compose.portainer.yml`. Il compose usa le immagini precompilate
   `ghcr.io/sebaf-26/hydranest-*` (niente più sezioni `build:`) e i percorsi
   persistenti da `DATA_PATH` (default `./data`, su Portainer va messo
-  assoluto, es. `/TRE_TB/timenest/data`).
+  assoluto, es. `/srv/hydranest/data`).
 - `install.sh` scarica le immagini invece di compilarle in locale;
   `CONTRIBUTING.md` spiega come costruirle a mano per lo sviluppo.
 

@@ -18,23 +18,23 @@
 # (variables in the stack's "Environment variables" section). In Portainer
 # use ABSOLUTE paths, e.g.:
 #
-#   BACKUP_PATH=/TRE_TB/timenest/backups
-#   DATA_PATH=/TRE_TB/timenest/data
+#   BACKUP_PATH=/srv/hydranest/backups
+#   DATA_PATH=/srv/hydranest/data
 #   WEB_PORT=8003
 #   SMB_INTERFACES=eth0
 #   ADMIN_PASSWORD=<strong password>
 #
 # iPhone section (README, "iPhone backups"):
 #
-#   IPHONE_NETWORK=airvault_net          existing macvlan on the phones' LAN
-#   IPHONE_IP=192.168.2.6                free address on it; Web UI there
+#   IPHONE_NETWORK=airvault_net             existing macvlan on the phones' LAN
+#   IPHONE_IP=192.168.20.10                 free address on it; Web UI there
 #   IPHONE_PORT=8089
-#   IPHONE_CONFIG_PATH=/TRE_TB/app/airvault/config   settings, DB, pairings
-#   IPHONE_BACKUP_PATH=/TRE_TB/backup/iphone         the backups
+#   IPHONE_CONFIG_PATH=/srv/airvault/config settings, DB, pairings
+#   IPHONE_BACKUP_PATH=/srv/airvault/backups
 #   IPHONE_AUTH_TOKEN=<iPhone Web UI token>
-#   IPHONE_URL=http://192.168.2.6:8089   the iphone service as the web container
-#                                        reaches it (iPhone page, Overview, Backups)
-#   TS_AUTHKEY=<Tailscale auth key>      first start only
+#   IPHONE_URL=http://192.168.20.10:8089    the iphone service as the web container
+#                                           reaches it (iPhone page, Overview, Backups)
+#   TS_AUTHKEY=<Tailscale auth key>         first start only
 #
 # Persistent state lives under DATA_PATH (default ./data):
 #   samba/              passdb.tdb & co. (Samba accounts)
