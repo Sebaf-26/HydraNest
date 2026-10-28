@@ -153,6 +153,6 @@ func (l *Library) Export(ctx context.Context, id string, damaged func(source str
 		return nil, fmt.Errorf("pack snapshot: %w", err)
 	}
 	name := cmp.Or(snapshot.DeviceName, snapshot.SourceUDID)
-	return &Export{Tar: archive, Name: fmt.Sprintf("AirVault-%s-%s.tar", name, created.Format("2006-01-02-1504")),
+	return &Export{Tar: archive, Name: fmt.Sprintf("HydraNest-%s-%s.tar", name, created.Format("2006-01-02-1504")),
 		damaged: func(err error) { damaged(snapshot.SourceUDID, err) }}, nil
 }

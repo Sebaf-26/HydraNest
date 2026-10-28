@@ -29,9 +29,12 @@
 <header class="sticky top-0 z-20 border-b border-base-300 bg-base-100/85 backdrop-blur">
   <div class="navbar mx-auto min-h-14 w-full max-w-6xl gap-2 px-4 sm:px-6">
     <div class="navbar-start min-w-0">
-      <a href="/" use:link class="flex items-center gap-2" aria-label="AirVault home">
+      <a href="/" use:link class="flex items-center gap-2" aria-label="HydraNest iPhone home">
         <Logo size={36} />
-        <span class="text-base font-semibold tracking-tight">AirVault</span>
+        <span class="text-base font-semibold tracking-tight">
+          Hydra<span class="text-primary">Nest</span>
+          <span class="font-normal text-base-content/60">· iPhone</span>
+        </span>
       </a>
     </div>
 

@@ -46,7 +46,8 @@
   });
 
   const dirty = $derived(address.trim() !== (access?.address ?? ''));
-  const checked = $derived(access?.checkedAt ? relativeTime(access.checkedAt, $now) : null);
+  // $now ticks every 30 s, so a fresh check would otherwise read as future.
+  const checked = $derived(access?.checkedAt ? relativeTime(access.checkedAt, Math.max($now, Date.now())) : null);
 
   async function save(value: string) {
     const ok = await submit.run(async (signal) => {
@@ -126,7 +127,7 @@
     {:else if access?.state === 'failed' && access.error}
       <p class="flex items-center gap-1.5 text-xs text-base-content/60">
         <Icon name="info" size={13} />
-        {errorText(access.error, 'remote_unreachable')}{checked ? ` · checked ${checked}` : ''}; tried again every minute
+        {errorText(access.error, 'remote_unreachable')}{checked ? ` · checked ${checked}` : ''} · retried every minute
       </p>
     {:else if access?.state === 'waiting'}
       <p class="flex items-center gap-1.5 text-xs text-base-content/60">

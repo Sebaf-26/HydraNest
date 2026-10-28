@@ -3,7 +3,7 @@
 </script>
 
 <img
-  src="/airvault-logo.svg"
+  src="/hydranest-logo.svg"
   alt=""
   width={size}
   height={size}

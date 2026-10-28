@@ -4,7 +4,7 @@ import App from './App.svelte';
 
 const target = document.getElementById('app');
 if (!target) {
-  throw new Error('AirVault: #app mount target not found');
+  throw new Error('HydraNest: #app mount target not found');
 }
 
 mount(App, { target });

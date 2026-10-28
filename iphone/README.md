@@ -1,5 +1,10 @@
 # AirVault - *Self-hosted, wireless iPhone backups*
 
+> **HydraNest:** this is a modified copy of
+> [AirVault](https://github.com/wizier/airvault) (GPL-3.0), the iPhone
+> section of HydraNest. See [NOTICE.md](NOTICE.md) for what changed and the
+> repository's main README for deployment.
+
 ## Quick start
 
 ```bash

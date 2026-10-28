@@ -129,7 +129,7 @@
   <div class="mt-4 flex flex-col gap-4">
     {#if backendOffline}
       <Alert tone="error" icon="offline">
-        AirVault can't be reached right now — the wizard will start automatically once the daemon is back.
+        HydraNest can't be reached right now — the wizard will start automatically once the daemon is back.
       </Alert>
     {:else if loadError}
       <Alert tone="error">
@@ -225,7 +225,7 @@
               {#if wifiAuthorizationFailed}
                 <h4 class="text-lg font-semibold">USB pairing complete</h4>
                 <p class="mt-1 text-sm text-base-content/60">
-                  The iPhone already trusts AirVault, so you won't need to approve it again
+                  The iPhone already trusts HydraNest, so you won't need to approve it again
                 </p>
               {:else}
                 <h4 class="text-lg font-semibold">Tap “Trust” on the iPhone</h4>
@@ -281,7 +281,7 @@
               <h4 class="text-lg font-semibold">Paired!</h4>
               <p class="mx-auto mt-1 max-w-md text-sm text-base-content/60">
                 <span class="font-medium text-base-content">{selectedName}</span> is connected to
-                AirVault — you can unplug the cable
+                HydraNest — you can unplug the cable
               </p>
             </div>
             <div class="mt-1 flex flex-wrap justify-center gap-2">

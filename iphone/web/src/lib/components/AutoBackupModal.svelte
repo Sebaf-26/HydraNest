@@ -51,8 +51,8 @@
 <Modal bind:this={modal} title={`Automatic backup of ${name}`} onclose={close}>
   <p class="py-3 text-sm text-base-content/70">
     iOS asks for the iPhone passcode before every backup and closes the prompt after about a
-    minute, so a backup can't run unattended. AirVault starts one about 5 seconds after the
-    iPhone is unlocked at home on Wi-Fi — while it's in your hands — so you just enter the
+    minute, so a backup can't run unattended. HydraNest starts one about 5 seconds after the
+    iPhone is unlocked on Wi-Fi (at home, or anywhere through Tailscale) — while it's in your hands — so you just enter the
     passcode when asked.
   </p>
 

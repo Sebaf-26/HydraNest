@@ -40,7 +40,7 @@
 
   {#if muxerDown}
     <Alert tone="warning" title="USB/Wi-Fi is unavailable">
-      netmuxd isn't answering, so devices can't be reached. AirVault reconnects on its own.
+      netmuxd isn't answering, so devices can't be reached. HydraNest reconnects on its own.
       {#if muxer?.error}
         <p class="mt-1 font-mono text-xs opacity-75">{muxer.error}</p>
       {/if}
@@ -52,7 +52,7 @@
       icon="offline"
       tone="danger"
       title="Backend offline"
-      message="AirVault can't be reached right now. This view will recover automatically once the daemon is back."
+      message="HydraNest can't be reached right now. This view will recover automatically once the daemon is back."
     />
   {:else if loadError}
     <EmptyState icon="alert" tone="danger" title="Could not load devices" message={loadError}>

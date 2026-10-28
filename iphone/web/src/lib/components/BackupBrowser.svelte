@@ -101,7 +101,7 @@
           Opening the backup…
         </p>
       {:else if components.length === 0}
-        <p class="text-sm text-base-content/60">This backup holds nothing AirVault can show yet.</p>
+        <p class="text-sm text-base-content/60">This backup holds nothing HydraNest can show yet.</p>
       {:else}
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {#each components as component (component)}

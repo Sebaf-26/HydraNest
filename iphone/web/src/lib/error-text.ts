@@ -2,7 +2,7 @@
 // catalogue swap instead of an API change.
 const english = {
   unknown_error: 'Something went wrong',
-  network_error: 'Cannot reach the AirVault backend',
+  network_error: 'Cannot reach the HydraNest backend',
   invalid_response: 'The backend returned an invalid response',
 
   devices_load_failed: 'Could not load devices',
@@ -43,7 +43,7 @@ const english = {
   invalid_photo_filter: 'That photo filter is not known',
   upstream_error: 'A required service did not respond',
   service_unavailable: 'The service is temporarily unavailable',
-  internal_error: 'AirVault could not complete the request',
+  internal_error: 'HydraNest could not complete the request',
 
   device_offline: 'The device is offline',
   device_never_came_online:
@@ -70,8 +70,8 @@ const english = {
   pair_state_failed: 'Could not read the pairing state',
   pairing_failed: 'Pairing failed',
   wifi_authorization_failed:
-    "AirVault couldn't finish Wi-Fi setup. Keep the cable connected and try again",
-  pairing_registration_failed: 'The phone trusted AirVault, but registration failed',
+    "HydraNest couldn't finish Wi-Fi setup. Keep the cable connected and try again",
+  pairing_registration_failed: 'The phone trusted HydraNest, but registration failed',
   pairing_timeout: 'Pairing timed out; start it again when the phone is ready',
   hardware_query_failed: 'Failed to read hardware information',
   battery_query_failed: 'Failed to read the battery state',
@@ -106,7 +106,7 @@ const english = {
   remote_unreachable: 'Not reachable: the iPhone must be on a Wi-Fi network with Tailscale on',
   remote_not_added: 'The phone was not added: pair it over USB first',
   remote_resolve_failed: 'That name does not resolve; use the Tailscale IP or the full MagicDNS name',
-  remote_muxer_failed: 'The USB/Wi-Fi service did not answer; trying again',
+  remote_muxer_failed: 'The USB/Wi-Fi service did not answer',
 
   backup_start_failed: 'Failed to start backup',
   backup_cancel_failed: 'Failed to cancel',
@@ -122,7 +122,7 @@ const english = {
   backup_integrity_failed: 'Stored backup data failed to read back; the affected restore points are marked damaged. Check disk health',
   backup_damaged: 'This restore point is damaged; run an integrity check or delete it',
   verify_start_failed: 'The integrity check could not be started',
-  verify_failed: 'The integrity check failed; check disk health and the AirVault log',
+  verify_failed: 'The integrity check failed; check disk health and the HydraNest log',
 } as const satisfies Record<string, string>;
 
 /** Keys owned by the UI. API codes remain strings because a newer backend can

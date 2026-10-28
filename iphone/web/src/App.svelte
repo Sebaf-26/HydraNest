@@ -31,7 +31,7 @@
 
   {#if showOfflineBanner}
     <div class="mx-auto w-full max-w-6xl px-4 pt-4 sm:px-6">
-      <Alert tone="warning" icon="offline">Can't reach the AirVault backend. Retrying automatically&hellip;</Alert>
+      <Alert tone="warning" icon="offline">Can't reach the HydraNest iPhone backend. Retrying automatically&hellip;</Alert>
     </div>
   {/if}
 
@@ -41,7 +41,11 @@
 
   <footer class="border-t border-base-300">
     <div class="mx-auto flex w-full max-w-6xl items-center justify-between gap-2 px-4 py-4 text-xs text-base-content/60 sm:px-6">
-      <span>AirVault · self-hosted iPhone backups</span>
+      <span>
+        HydraNest iPhone backups · based on
+        <a class="link" href="https://github.com/wizier/airvault" target="_blank" rel="noopener noreferrer">AirVault</a>
+        (GPL-3.0)
+      </span>
       <span>{appVersion}</span>
     </div>
   </footer>

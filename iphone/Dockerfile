@@ -1,9 +1,12 @@
-# netmuxd ships a prebuilt binary; the digest pins this exact tag. The image is
-# built for linux/amd64 only, so no other release is fetched.
+# HydraNest: built for linux/amd64 and linux/arm64. netmuxd ships prebuilt
+# Linux binaries for x86_64 and aarch64 only (no armv7), one pinned digest each.
 ARG NETMUXD_TAG=v0.4.3
-ARG NETMUXD_SHA256=85b6598284fc639f2a282584461d05e2090b79bdf3ec949d2a5e5d3dc655dde4
+ARG NETMUXD_SHA256_AMD64=85b6598284fc639f2a282584461d05e2090b79bdf3ec949d2a5e5d3dc655dde4
+ARG NETMUXD_SHA256_ARM64=a89d587b094184b41431bc343da6dfa890391ccc7d4b3d6bce02b524f3191ae6
 
-FROM node:24-slim AS web
+# The UI and the pure-Go daemon build on the runner's own arch; only the
+# runtime stage runs under emulation.
+FROM --platform=$BUILDPLATFORM node:24-slim AS web
 WORKDIR /web
 COPY web/package.json web/package-lock.json ./
 RUN npm ci
@@ -13,9 +16,11 @@ COPY web/ ./
 ARG VERSION=dev
 RUN VITE_APP_VERSION=$VERSION npm run build
 
-FROM golang:1.27-trixie AS build
+FROM --platform=$BUILDPLATFORM golang:1.27-trixie AS build
 # .git is dockerignored; the release version comes in as an ARG.
 ARG VERSION=dev
+ARG TARGETOS TARGETARCH
+ENV GOOS=$TARGETOS GOARCH=$TARGETARCH
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
@@ -27,9 +32,9 @@ RUN make build COMPONENTS= VERSION=${VERSION} GOTAGS=timetzdata DAEMON_BINARY=/o
 
 FROM debian:trixie-slim AS runtime
 ARG VERSION=dev
-LABEL org.opencontainers.image.title="AirVault" \
-      org.opencontainers.image.description="Self-hosted iPhone backup server " \
-      org.opencontainers.image.source="https://github.com/wizier/airvault" \
+LABEL org.opencontainers.image.title="HydraNest iPhone" \
+      org.opencontainers.image.description="HydraNest iPhone backups (USB, Wi-Fi and Tailscale), a modified AirVault" \
+      org.opencontainers.image.source="https://github.com/Sebaf-26/HydraNest" \
       org.opencontainers.image.licenses="GPL-3.0" \
       org.opencontainers.image.version="$VERSION"
 
@@ -38,11 +43,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends usbmuxd ca-cert
     && rm -rf /var/lib/apt/lists/*
 
 ARG NETMUXD_TAG
-ARG NETMUXD_SHA256
+ARG NETMUXD_SHA256_AMD64
+ARG NETMUXD_SHA256_ARM64
+ARG TARGETARCH
 RUN set -eux; \
+    case "$TARGETARCH" in \
+      amd64) arch=x86_64;  sha="$NETMUXD_SHA256_AMD64" ;; \
+      arm64) arch=aarch64; sha="$NETMUXD_SHA256_ARM64" ;; \
+      *) echo "no netmuxd release for $TARGETARCH" >&2; exit 1 ;; \
+    esac; \
     curl -fsSL -o /tmp/netmuxd.tar.gz \
-      "https://github.com/jkcoxson/netmuxd/releases/download/$NETMUXD_TAG/netmuxd-x86_64-unknown-linux-gnu.tar.gz"; \
-    echo "$NETMUXD_SHA256  /tmp/netmuxd.tar.gz" | sha256sum -c -; \
+      "https://github.com/jkcoxson/netmuxd/releases/download/$NETMUXD_TAG/netmuxd-$arch-unknown-linux-gnu.tar.gz"; \
+    echo "$sha  /tmp/netmuxd.tar.gz" | sha256sum -c -; \
     tar -xzf /tmp/netmuxd.tar.gz -C /usr/local/bin netmuxd; \
     rm /tmp/netmuxd.tar.gz
 COPY --from=build /out/airvault /usr/local/bin/airvault

@@ -35,7 +35,7 @@ func TestExportNamesFileAndFolder(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer export.Close()
-	if want := "AirVault-Test iPhone-" + created.Format("2006-01-02-1504") + ".tar"; export.Name != want {
+	if want := "HydraNest-Test iPhone-" + created.Format("2006-01-02-1504") + ".tar"; export.Name != want {
 		t.Fatalf("name = %q, want %q", export.Name, want)
 	}
 	header, err := tar.NewReader(export).Next()

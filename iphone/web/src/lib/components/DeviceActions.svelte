@@ -63,7 +63,7 @@
     onclose={() => (action = null)}
   >
     <p class="py-3 text-sm text-base-content/70">
-      The iPhone is told to forget this AirVault host, and the device is removed from AirVault
+      The iPhone is told to forget this HydraNest host, and the device is removed from HydraNest
       either way. If it can't be reached right now, clear the trust on the phone later via
       Settings → General → Transfer or Reset → Reset Location &amp; Privacy. To back it up
       again, you'll pair over USB from scratch.
@@ -89,7 +89,7 @@
     onclose={() => (action = null)}
   >
     <p class="py-3 text-sm text-base-content/70">
-      Deletes all restore points for this device. The device stays in AirVault and can be backed up
+      Deletes all restore points for this device. The device stays in HydraNest and can be backed up
       again manually. This can't be undone.
     </p>
   </ConfirmDialog>

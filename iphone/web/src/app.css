@@ -1,7 +1,8 @@
 @import "tailwindcss";
 @plugin "daisyui";
 
-/* Palette shared with site/: accent #f45f3a family, green/amber/danger statuses. */
+/* HydraNest palette (ink navy, accent cyan, as in the main web UI); green/amber/danger
+   statuses as upstream. Theme names stay AirVault's so saved choices carry over. */
 @plugin "daisyui/theme" {
   name: "airvault";
   default: true;
@@ -9,17 +10,17 @@
   color-scheme: light;
 
   --color-base-100: #ffffff;
-  --color-base-200: #f2f0ea;
-  --color-base-300: #e3dfd6;
-  --color-base-content: #16181b;
-  --color-primary: #c43d20;
-  --color-primary-content: #fffaf5;
-  --color-secondary: #5c6167;
+  --color-base-200: #f5f6f8;
+  --color-base-300: #e5e8ee;
+  --color-base-content: #0c0f17;
+  --color-primary: #0e9fc2;
+  --color-primary-content: #ffffff;
+  --color-secondary: #4a5468;
   --color-secondary-content: #ffffff;
-  --color-accent: #f45f3a;
-  --color-accent-content: #331109;
-  --color-neutral: #23262b;
-  --color-neutral-content: #f2f0ea;
+  --color-accent: #22c7e8;
+  --color-accent-content: #05070d;
+  --color-neutral: #222836;
+  --color-neutral-content: #f5f6f8;
   --color-info: #2a76a2;
   --color-info-content: #ffffff;
   --color-success: #178a5d;
@@ -39,26 +40,24 @@
   --noise: 0;
 }
 
-/* Surfaces lifted a notch: the landing's near-black reads too dark in a working
-   dashboard. */
 @plugin "daisyui/theme" {
   name: "airvaultdark";
   default: false;
   prefersdark: true;
   color-scheme: dark;
 
-  --color-base-100: #191d24;
-  --color-base-200: #10131a;
-  --color-base-300: #272d38;
-  --color-base-content: #f0eee8;
-  --color-primary: #f45f3a;
-  --color-primary-content: #fffaf5;
-  --color-secondary: #b8bbc0;
-  --color-secondary-content: #0b0d10;
-  --color-accent: #ff8b68;
-  --color-accent-content: #2a1710;
-  --color-neutral: #272d38;
-  --color-neutral-content: #f0eee8;
+  --color-base-100: #171b26;
+  --color-base-200: #0c0f17;
+  --color-base-300: #222836;
+  --color-base-content: #e5e8ee;
+  --color-primary: #22c7e8;
+  --color-primary-content: #05070d;
+  --color-secondary: #99a3b7;
+  --color-secondary-content: #0c0f17;
+  --color-accent: #5ee0f5;
+  --color-accent-content: #05070d;
+  --color-neutral: #222836;
+  --color-neutral-content: #e5e8ee;
   --color-info: #6cb1dd;
   --color-info-content: #08131b;
   --color-success: #69d79c;

@@ -4,18 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark light" />
-    <meta name="description" content="AirVault — self-hosted wireless iPhone backups to your NAS." />
-    <link rel="icon" type="image/svg+xml" href="/airvault-logo.svg" />
-    <title>AirVault</title>
+    <meta name="description" content="HydraNest iPhone backups, based on AirVault: wireless iPhone backups to your NAS." />
+    <link rel="icon" type="image/svg+xml" href="/hydranest-logo.svg" />
+    <title>HydraNest · iPhone</title>
     <!-- Set the theme before first paint to avoid a flash of the wrong one:
-         saved choice, then OS preference, then dark. -->
+         saved choice, then dark like the rest of HydraNest. -->
     <script>
       (function () {
         try {
           var saved = localStorage.getItem('airvault-theme');
-          var dark = saved
-            ? saved === 'dark'
-            : !window.matchMedia('(prefers-color-scheme: light)').matches;
+          var dark = saved ? saved === 'dark' : true;
           document.documentElement.setAttribute(
             'data-theme',
             dark ? 'airvaultdark' : 'airvault'

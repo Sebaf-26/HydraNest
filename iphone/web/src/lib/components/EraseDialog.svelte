@@ -37,11 +37,11 @@
     <p>
       Erases all content and settings, as Settings → General → Transfer or Reset → Erase All Content and
       Settings does, and restarts the phone into setup. The phone may ask for its passcode first. It then leaves
-      AirVault; to use it here again, pair it over USB from scratch.
+      HydraNest; to use it here again, pair it over USB from scratch.
     </p>
     {#if device.lastBackup}
       <p>
-        Its backups stay in AirVault and can be restored onto any phone. The last one was made
+        Its backups stay in HydraNest and can be restored onto any phone. The last one was made
         <span class="font-medium text-base-content/80" title={formatDateTime(device.lastBackup)}>{relativeTime(device.lastBackup, $now)}</span>.
       </p>
     {:else}

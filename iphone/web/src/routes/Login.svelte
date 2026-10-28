@@ -32,7 +32,7 @@
     <form class="card-body gap-4" onsubmit={submit}>
       <div class="flex flex-col items-center gap-2 text-center">
         <Logo size={40} />
-        <h1 class="text-lg font-semibold tracking-tight">Sign in to AirVault</h1>
+        <h1 class="text-lg font-semibold tracking-tight">Sign in to HydraNest iPhone</h1>
         <p class="text-sm text-base-content/60">
           Paste your Web UI token
         </p>
