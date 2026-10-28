@@ -47,6 +47,30 @@ jobs:
           CONF
           testparm -s /tmp/etc/samba/smb.conf
 
+  # iPhone section (modified AirVault): upstream's own gate, `make check`
+  # (golangci-lint, svelte-check, Go tests).
+  iphone:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: iphone
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: iphone/go.mod
+          cache-dependency-path: iphone/go.sum
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: iphone/web/package-lock.json
+      - uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.14.0
+          install-only: true
+      - run: make check
+
   # HydraNest: end-to-end check of the Samba fixes (smbd starts, explicit
   # share includes, users/shares survive a container recreate, quota edit).
   samba-integration:

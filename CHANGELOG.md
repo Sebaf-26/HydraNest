@@ -4,6 +4,38 @@ HydraNest è un fork di [momenbasel/timenest](https://github.com/momenbasel/time
 (server Time Machine su Samba + Avahi + Web UI) con le correzioni emerse
 installandolo su Proxmox + Portainer.
 
+## v0.4.0 — 2026-10-28
+
+### Sezione iPhone (nuova)
+- Due servizi nuovi nello stack: `iphone` (immagine
+  `ghcr.io/sebaf-26/hydranest-iphone`) e `tailscale` (immagine ufficiale).
+  Il servizio iPhone è [AirVault](https://github.com/wizier/airvault)
+  modificato, importato in `iphone/` con `git subtree`, sotto GPL-3.0; il
+  resto di HydraNest resta MIT. Le modifiche sono elencate in
+  `iphone/NOTICE.md`.
+- **Indirizzo Tailscale per iPhone**: nella pagina di ogni iPhone il campo
+  *Remote access (Tailscale)* accetta l'IP Tailscale o il nome MagicDNS. Il
+  motore lo passa a netmuxd con `AddDevice` (UDID + IP) all'avvio, ogni
+  minuto e subito dopo una modifica, così il backup parte anche fuori casa.
+  Serve comunque un Wi-Fi qualsiasi: sui soli dati mobili iOS rifiuta la
+  connessione (provato il 2026-10-28, iOS 27.2).
+- Il container iPhone usa la rete del container Tailscale, che sta anche
+  sulla macvlan della LAN degli iPhone: a casa la scoperta via Bonjour
+  funziona come prima, anche con Tailscale spento sull'iPhone.
+- Percorsi e variabili pensati per riprendere i dati di uno stack AirVault
+  esistente (`IPHONE_CONFIG_PATH`, `IPHONE_BACKUP_PATH`): abbinamenti e
+  backup restano.
+- Interfaccia ribrandizzata HydraNest (nome, logo, colori, tema scuro).
+- Immagine iPhone per amd64 e arm64 (netmuxd non ha una release armv7).
+
+### Web UI
+- Voce **iPhone** nel menu, che apre l'interfaccia del container iPhone;
+  compare solo se `IPHONE_URL` è impostata.
+
+### CI
+- `docker.yml` costruisce e firma anche `hydranest-iphone`; `ci.yml` esegue
+  `make check` di AirVault (golangci-lint, svelte-check, test Go).
+
 ## v0.3.0 — 2026-10-08
 
 ### Web UI

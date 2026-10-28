@@ -1,12 +1,17 @@
 # HydraNest stack (fork of TimeNest)
 #
-# Three services:
-#   samba  - Samba 4 with vfs_fruit for Time Machine
-#   avahi  - Avahi daemon advertising the share as a Time Capsule
-#   web    - FastAPI admin UI + Prometheus metrics
+# Five services:
+#   samba     - Samba 4 with vfs_fruit for Time Machine
+#   avahi     - Avahi daemon advertising the share as a Time Capsule
+#   web       - FastAPI admin UI + Prometheus metrics
+#   tailscale - official Tailscale container, the iPhone service's network
+#   iphone    - iPhone backups over USB, Wi-Fi and Tailscale (a modified
+#               AirVault, GPL-3.0: see iphone/NOTICE.md)
 #
 # Samba and Avahi need `network_mode: host` so mDNS broadcasts and SMB
-# traffic reach the LAN.
+# traffic reach the LAN. The iPhone service shares the tailscale container's
+# network: a macvlan address on the phones' LAN (Bonjour at home) plus the
+# tailnet (the phone's Tailscale address anywhere else).
 #
 # Uses the prebuilt images from GHCR, so the same file works with
 # `docker compose up -d` (variables from .env) and as a Portainer stack
@@ -19,10 +24,22 @@
 #   SMB_INTERFACES=eth0
 #   ADMIN_PASSWORD=<strong password>
 #
+# iPhone section (README, "iPhone backups"):
+#
+#   IPHONE_NETWORK=airvault_net          existing macvlan on the phones' LAN
+#   IPHONE_IP=192.168.2.6                free address on it; Web UI there
+#   IPHONE_PORT=8089
+#   IPHONE_CONFIG_PATH=/TRE_TB/app/airvault/config   settings, DB, pairings
+#   IPHONE_BACKUP_PATH=/TRE_TB/backup/iphone         the backups
+#   IPHONE_AUTH_TOKEN=<iPhone Web UI token>
+#   IPHONE_URL=http://192.168.2.6:8089   "iPhone" entry in the HydraNest menu
+#   TS_AUTHKEY=<Tailscale auth key>      first start only
+#
 # Persistent state lives under DATA_PATH (default ./data):
 #   samba/              passdb.tdb & co. (Samba accounts)
 #   config/shares.d/    one <user>.conf per user (shares, also read by the web UI)
 #   web/                web UI session data
+#   tailscale/          the iPhone service's Tailscale node state
 #
 # No patched entrypoint needs to be mounted: the --log-stdout, wildcard
 # include, template and user-persistence problems are fixed in the images.
@@ -86,6 +103,7 @@ services:
       TZ: ${TIMEZONE:-UTC}
       SAMBA_CONTAINER: timenest-samba
       SHARES_PATH: /config/shares.d
+      IPHONE_URL: ${IPHONE_URL:-}
     volumes:
       - ${BACKUP_PATH:?BACKUP_PATH must be set}:/backup:ro
       - ${DATA_PATH:-./data}/web:/data
@@ -101,3 +119,65 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+
+  # Tailscale node for the iPhone service (kernel networking: netmuxd dials
+  # the phones' 100.x addresses directly). TS_AUTHKEY is needed only until
+  # the node has joined; its state then lives under DATA_PATH. In the
+  # Tailscale admin console, disable key expiry for this machine.
+  tailscale:
+    image: tailscale/tailscale:stable
+    container_name: hydranest-tailscale
+    hostname: ${IPHONE_TS_HOSTNAME:-hydranest-iphone}
+    restart: unless-stopped
+    environment:
+      TS_AUTHKEY: ${TS_AUTHKEY:-}
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_USERSPACE: "false"
+      TS_EXTRA_ARGS: ${TS_EXTRA_ARGS:-}
+      TZ: ${TIMEZONE:-UTC}
+    volumes:
+      - ${DATA_PATH:-./data}/tailscale:/var/lib/tailscale
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      iphone_lan:
+        ipv4_address: ${IPHONE_IP:?IPHONE_IP must be set}
+
+  # iPhone backups. Pair each iPhone once over USB from its Web UI; after
+  # that it is backed up over Wi-Fi at home and, with its Tailscale address
+  # set in its device page, from any other Wi-Fi with Tailscale on.
+  iphone:
+    image: ghcr.io/sebaf-26/hydranest-iphone:latest
+    container_name: hydranest-iphone
+    restart: unless-stopped
+    network_mode: service:tailscale
+    environment:
+      AIRVAULT_PORT: ${IPHONE_PORT:-8089}
+      # Web UI password; when empty, a generated one is printed in the log.
+      AIRVAULT_AUTH_TOKEN: ${IPHONE_AUTH_TOKEN:-}
+      AIRVAULT_LOG_LEVEL: ${IPHONE_LOG_LEVEL:-info}
+      AIRVAULT_MUX_LOG_LEVEL: ${IPHONE_MUX_LOG_LEVEL:-warn}
+      TZ: ${TIMEZONE:-UTC}
+    # USB pairing: the iPhone's USB bus
+    device_cgroup_rules:
+      - "c 189:* rmw"
+    volumes:
+      # Same layout as AirVault's /config and /backups, so an existing
+      # AirVault install keeps its pairings and backups.
+      - ${IPHONE_CONFIG_PATH:?IPHONE_CONFIG_PATH must be set}:/config
+      - ${IPHONE_BACKUP_PATH:?IPHONE_BACKUP_PATH must be set}:/backups
+      - /dev/bus/usb:/dev/bus/usb
+      - /run/udev:/run/udev:ro
+    depends_on:
+      - tailscale
+
+# The macvlan on the phones' LAN is created outside the stack (in Portainer:
+# driver macvlan, parent = the host's interface on that LAN), so removing the
+# stack never removes it.
+networks:
+  iphone_lan:
+    external: true
+    name: ${IPHONE_NETWORK:-airvault_net}

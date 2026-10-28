@@ -10,6 +10,8 @@ destination. It runs as one Docker stack:
 | `timenest-samba` | Samba 4 with `vfs_fruit`, one Time Machine share per user     |
 | `timenest-avahi` | Bonjour/mDNS, so Macs find the server on their own            |
 | `timenest-web`   | Admin web UI: overview, backups, Macs, users, quotas          |
+| `hydranest-tailscale` | Tailscale node: the iPhone service's network             |
+| `hydranest-iphone` | iPhone backups over USB, Wi-Fi and Tailscale ([iPhone backups](#iphone-backups)) |
 
 HydraNest is a fork of [momenbasel/timenest](https://github.com/momenbasel/timenest).
 It fixes the Samba and user-management problems found when running it on
@@ -40,7 +42,8 @@ Portainer -> **Stacks** -> **Add stack**, then either:
 - **Web editor**: paste [`docker-compose.yml`](docker-compose.yml).
 
 The compose file only pulls prebuilt public images
-(`ghcr.io/sebaf-26/hydranest-{samba,avahi,web}`), nothing is built on the server.
+(`ghcr.io/sebaf-26/hydranest-{samba,avahi,web,iphone}` and
+`tailscale/tailscale`), nothing is built on the server.
 
 ### 3. Set the environment variables
 
@@ -58,6 +61,8 @@ ENABLE_METRICS=true
 SMB_INTERFACES=eth0
 WEB_PORT=8003
 ```
+
+plus the iPhone variables, see [iPhone backups](#iphone-backups).
 
 In Portainer, `BACKUP_PATH` and `DATA_PATH` **must be absolute paths**.
 Relative paths would point inside Portainer's own data directory.
@@ -97,6 +102,88 @@ Portainer -> the stack -> **Update the stack** with **Re-pull image** enabled.
 
 Samba and Avahi use `network_mode: host`: SMB is on port 445 of the host and
 Bonjour announcements reach the LAN directly.
+
+The iPhone variables (`IPHONE_*`, `TS_*`) are listed under
+[iPhone backups](#iphone-backups).
+
+---
+
+## iPhone backups
+
+The `iphone` service backs up iPhones to the server: at home over USB or
+Wi-Fi like Finder, and **away from home through Tailscale**. It is a
+modified [AirVault](https://github.com/wizier/airvault) under GPL-3.0, kept
+in [`iphone/`](iphone/) (see [iphone/NOTICE.md](iphone/NOTICE.md)).
+
+It runs inside the network of the `tailscale` container, which has two
+legs: an address on a macvlan network on the iPhones' LAN, where the phones
+are found by Bonjour, and a Tailscale node. Each iPhone's page has a
+**Remote access (Tailscale)** field: with its Tailscale address there,
+HydraNest asks netmuxd to reach the phone at that address on start, every
+minute and after a change, whenever Bonjour can't see it.
+
+> **Wi-Fi is required, cellular is not enough.** iOS only opens the
+> backup/sync service while the iPhone is on a Wi-Fi network. Away from home
+> any Wi-Fi works (office, hotel) with Tailscale on; on mobile data alone
+> the phone answers Tailscale but refuses the connection (tested on iOS 27.2).
+
+### Before the first deploy
+
+- **A macvlan network on the iPhones' LAN**, created outside the stack (in
+  Portainer: Networks -> Add network, driver `macvlan`, parent = the host's
+  interface on that LAN, its subnet and gateway). Pick a free address on it
+  for `IPHONE_IP`.
+- **`/dev/net/tun` on the host.** In a Proxmox LXC, add to
+  `/etc/pve/lxc/<id>.conf` and restart the container:
+  `lxc.mount.entry: /dev/net/tun dev/net/tun none bind,create=file`
+  (plus `lxc.cgroup2.devices.allow: c 10:200 rwm` if the LXC does not
+  already allow all devices).
+- **A Tailscale auth key** (admin console -> Settings -> Keys), one-off is
+  enough: the node's state is kept in `DATA_PATH/tailscale`, so the key is
+  only used on the first start. Afterwards, in Machines, **disable key
+  expiry** for `hydranest-iphone`, or it drops off the tailnet after
+  180 days. If you use ACLs, let it reach the iPhones on every TCP port
+  (iOS opens its services on random ports).
+- **The Tailscale app on each iPhone**, signed in to the same tailnet and
+  left connected.
+
+### Variables
+
+| Variable             | Default            | What it does |
+| :------------------- | :----------------- | :----------- |
+| `IPHONE_NETWORK`     | `airvault_net`     | Existing macvlan network on the iPhones' LAN |
+| `IPHONE_IP`          | required           | Free address on it; the iPhone Web UI is at `http://IPHONE_IP:IPHONE_PORT` |
+| `IPHONE_PORT`        | `8089`             | iPhone Web UI port |
+| `IPHONE_CONFIG_PATH` | required           | Host folder for settings, database and pairing records (AirVault's `/config`) |
+| `IPHONE_BACKUP_PATH` | required           | Host folder for the iPhone backups (AirVault's `/backups`) |
+| `IPHONE_AUTH_TOKEN`  | empty              | iPhone Web UI password; when empty, a generated one is printed in the log |
+| `IPHONE_URL`         | empty              | Link of the **iPhone** entry in the HydraNest menu, e.g. `http://192.168.2.6:8089`; empty hides it |
+| `TS_AUTHKEY`         | empty              | Tailscale auth key, first start only. Empty: the log of `hydranest-tailscale` shows a login link instead |
+| `IPHONE_TS_HOSTNAME` | `hydranest-iphone` | Machine name on the tailnet |
+| `TS_EXTRA_ARGS`      | empty              | Extra `tailscale up` flags, e.g. `--advertise-tags=tag:hydranest` |
+| `IPHONE_LOG_LEVEL` / `IPHONE_MUX_LOG_LEVEL` | `info` / `warn` | Daemon and USB/Wi-Fi muxer logs; `debug` for diagnosis |
+
+### Pairing and remote access
+
+1. Open the iPhone Web UI (the **iPhone** entry in the HydraNest menu) and
+   click **Pair device** with the iPhone connected **over USB** to the
+   server, once: the iPhone asks to trust the computer. After that the cable
+   is no longer needed.
+2. In the iPhone's page, under **Remote access (Tailscale)**, enter its
+   Tailscale IP (`100.x.y.z`, shown in the Tailscale app or admin console)
+   or its full MagicDNS name (`iphone.<tailnet>.ts.net`) and save. The card
+   shows whether the phone is reachable.
+3. **Automatic backup** (same page) works the same at home and away: about
+   5 seconds after the iPhone is unlocked on Wi-Fi the backup starts, and
+   iOS asks for the passcode.
+
+### Coming from an AirVault stack
+
+Set `IPHONE_CONFIG_PATH` and `IPHONE_BACKUP_PATH` to the old stack's
+`/config` and `/backups` folders: pairings, settings and restore points
+carry over, nothing needs re-pairing. **Stop the old stack first**: two
+daemons on the same folders (and the same USB bus) would corrupt the
+database. Delete it only once the new service works.
 
 ---
 
@@ -234,10 +321,17 @@ With `ENABLE_METRICS=true`, `http://<server>:<WEB_PORT>/metrics` exposes
 ## Security
 
 - Don't expose port 445 or the web UI to the internet. For remote backups use a VPN (WireGuard, Tailscale).
+- The iPhone Web UI is reachable on the tailnet too (`http://hydranest-iphone:<IPHONE_PORT>`): set `IPHONE_AUTH_TOKEN` to a strong value. Never commit `TS_AUTHKEY` or the token.
 - SMB1 is disabled, SMB signing is mandatory.
 - The web container mounts `/var/run/docker.sock` to manage Samba users via `docker exec`: treat the web UI password like root access to the host.
 
 ## License
 
-MIT, like the original project. See [LICENSE](LICENSE).
-Original work © momenbasel/timenest contributors.
+The two parts of the repository have different licenses:
+
+- Everything except `iphone/`: MIT, like the original project. See
+  [LICENSE](LICENSE). Original work © momenbasel/timenest contributors.
+- [`iphone/`](iphone/) and the `hydranest-iphone` image: GNU GPL v3.0 or
+  later, as the [AirVault](https://github.com/wizier/airvault) code it is
+  based on. See [iphone/LICENSE](iphone/LICENSE) and
+  [iphone/NOTICE.md](iphone/NOTICE.md) for what HydraNest changed.
