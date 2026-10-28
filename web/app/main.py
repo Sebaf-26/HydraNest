@@ -10,14 +10,15 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
-from fastapi import Depends, FastAPI, Form, HTTPException, Request, status
+from fastapi import Depends, FastAPI, Form, HTTPException, Query, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
-from . import __version__, metrics, overview, samba_mgr, timemachine
+from . import __version__, iphone, metrics, overview, samba_mgr, timemachine
 from .monitor import Monitor
 from .auth import LoginDep, verify_login
 from .config import Settings, get_settings
@@ -33,6 +34,7 @@ async def _lifespan(_: FastAPI) -> AsyncIterator[None]:
     monitor.start()
     yield
     await monitor.stop()
+    await iphone.aclose()
 
 
 app = FastAPI(title="HydraNest", docs_url=None, redoc_url=None, lifespan=_lifespan)
@@ -75,7 +77,7 @@ _templates_dir = Path(__file__).resolve().parent / "templates"
 templates = Jinja2Templates(directory=_templates_dir)
 templates.env.globals["version"] = __version__
 templates.env.globals["server_name"] = settings.admin_user
-templates.env.globals["iphone_url"] = settings.iphone_url or None
+templates.env.globals["iphone_enabled"] = bool(settings.iphone_url)
 
 
 def _mgr() -> samba_mgr.SambaManager:
@@ -145,6 +147,13 @@ async def _overview() -> overview.Overview:
     return overview.build(settings, _mgr().list_users(), live)
 
 
+async def _overview_with_phones() -> tuple[overview.Overview, iphone.Phones]:
+    ov = await _overview()
+    phones = await iphone.phones(settings)
+    ov.health = iphone.with_issues(ov.health, phones)
+    return ov, phones
+
+
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
@@ -188,12 +197,37 @@ def logout(request: Request) -> Response:
 
 @app.get("/", response_class=HTMLResponse)
 async def overview_page(request: Request, user: str = LoginDep) -> Response:
-    return await _render(request, "overview.html", "overview", ov=await _overview())
+    ov, phones = await _overview_with_phones()
+    return await _render(request, "overview.html", "overview", ov=ov, phones=phones)
 
 
 @app.get("/backups", response_class=HTMLResponse)
 async def backups_page(request: Request, user: str = LoginDep) -> Response:
-    return await _render(request, "backups.html", "backups", ov=await _overview())
+    ov, phones = await _overview_with_phones()
+    return await _render(request, "backups.html", "backups", ov=ov, phones=phones)
+
+
+# The iPhone section: its own UI, framed in the HydraNest layout. `d` opens
+# one phone's page.
+@app.get("/iphone", response_class=HTMLResponse)
+async def iphone_page(request: Request, user: str = LoginDep, d: str | None = Query(default=None)) -> Response:
+    src = iphone.PREFIX + "/" + (f"#/device/{quote(d, safe='')}" if d else "")
+    return await _render(request, "iphone.html", "iphone", src=src)
+
+
+@app.get(iphone.PREFIX)
+def iphone_app_root() -> Response:
+    # Relative asset paths in the iPhone UI need the trailing slash.
+    return RedirectResponse(iphone.PREFIX + "/", status_code=status.HTTP_308_PERMANENT_REDIRECT)
+
+
+@app.api_route(iphone.PREFIX + "/{rest:path}", methods=["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"])
+async def iphone_app(request: Request, rest: str) -> Response:
+    if not settings.iphone_url:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    if not request.session.get("user"):
+        return iphone.unauthenticated("/" + rest)
+    return await iphone.proxy(request, settings)
 
 
 @app.get("/clients", response_class=HTMLResponse)

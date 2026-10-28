@@ -8,6 +8,15 @@
 {% endif %}
 {%- endmacro %}
 
+{% macro phone_icon(cls="h-5 w-5") -%}
+<svg class="{{ cls }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z M11 18h2"></path></svg>
+{%- endmacro %}
+
+{# Wi-Fi also covers a phone reached through Tailscale. #}
+{% macro connection_label(connection) -%}
+{{ {'wifi': 'Wi-Fi', 'usb': 'USB'}.get(connection, 'offline') }}
+{%- endmacro %}
+
 {% macro status_chip(status) -%}
 {% set styles = {
     'ok':      ('bg-emerald-500/10 text-emerald-300 ring-emerald-500/20', 'Up to date'),
@@ -17,6 +26,7 @@
     'stale':   ('bg-amber-500/10 text-amber-300 ring-amber-500/20', 'Overdue'),
     'failed':  ('bg-red-500/10 text-red-300 ring-red-500/20', 'Verify failed'),
     'never':   ('bg-ink-500/20 text-ink-300 ring-ink-500/30', 'No backup yet'),
+    'error':   ('bg-red-500/10 text-red-300 ring-red-500/20', 'Backup failed'),
 } %}
 {% set st = styles.get(status, styles['never']) %}
 <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset {{ st[0] }}">

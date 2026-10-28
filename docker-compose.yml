@@ -32,7 +32,8 @@
 #   IPHONE_CONFIG_PATH=/TRE_TB/app/airvault/config   settings, DB, pairings
 #   IPHONE_BACKUP_PATH=/TRE_TB/backup/iphone         the backups
 #   IPHONE_AUTH_TOKEN=<iPhone Web UI token>
-#   IPHONE_URL=http://192.168.2.6:8089   "iPhone" entry in the HydraNest menu
+#   IPHONE_URL=http://192.168.2.6:8089   the iphone service as the web container
+#                                        reaches it (iPhone page, Overview, Backups)
 #   TS_AUTHKEY=<Tailscale auth key>      first start only
 #
 # Persistent state lives under DATA_PATH (default ./data):
@@ -103,7 +104,10 @@ services:
       TZ: ${TIMEZONE:-UTC}
       SAMBA_CONTAINER: timenest-samba
       SHARES_PATH: /config/shares.d
+      # The iPhone section inside this UI: its UI is proxied under /iphone/app/
+      # with the token added here, so the HydraNest login is the only one.
       IPHONE_URL: ${IPHONE_URL:-}
+      IPHONE_AUTH_TOKEN: ${IPHONE_AUTH_TOKEN:-}
     volumes:
       - ${BACKUP_PATH:?BACKUP_PATH must be set}:/backup:ro
       - ${DATA_PATH:-./data}/web:/data

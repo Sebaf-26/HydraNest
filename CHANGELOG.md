@@ -4,6 +4,27 @@ HydraNest è un fork di [momenbasel/timenest](https://github.com/momenbasel/time
 (server Time Machine su Samba + Avahi + Web UI) con le correzioni emerse
 installandolo su Proxmox + Portainer.
 
+## v0.5.0 — 2026-10-28
+
+### Sezione iPhone dentro HydraNest
+- **Un solo indirizzo e un solo login.** La pagina **iPhone** del menu mostra
+  la sezione iPhone dentro HydraNest, con la barra laterale e l'intestazione
+  di HydraNest: il server web fa da tramite verso il container iPhone
+  (`/iphone/app/`) e ci entra da solo con `IPHONE_AUTH_TOKEN`. La barra in
+  alto e il piè di pagina della parte iPhone si nascondono quando è dentro
+  HydraNest. «Open in a new tab» apre la stessa interfaccia a tutta pagina,
+  sempre senza un secondo login.
+- **iPhone in Overview e Backups**, accanto ai Mac: nome, modello, iOS,
+  collegamento, ultimo backup, spazio, restore point e stato; un clic apre la
+  pagina dell'iPhone. Backup Health segnala anche gli iPhone senza backup da
+  più di 7 giorni, l'ultimo backup fallito o il servizio iPhone non
+  raggiungibile.
+- `IPHONE_URL` ora è l'indirizzo del container iPhone visto dal container web
+  (es. `http://192.168.2.5:8089`), e il container web riceve anche
+  `IPHONE_AUTH_TOKEN`.
+- Interfaccia iPhone: percorsi relativi (funziona sia da sola sia sotto
+  `/iphone/app/`); i testi del backup automatico non dicono più «at home».
+
 ## v0.4.0 — 2026-10-28
 
 ### Sezione iPhone (nuova)

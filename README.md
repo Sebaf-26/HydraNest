@@ -9,7 +9,7 @@ destination. It runs as one Docker stack:
 | :--------------- | :------------------------------------------------------------ |
 | `timenest-samba` | Samba 4 with `vfs_fruit`, one Time Machine share per user     |
 | `timenest-avahi` | Bonjour/mDNS, so Macs find the server on their own            |
-| `timenest-web`   | Admin web UI: overview, backups, Macs, users, quotas          |
+| `timenest-web`   | Admin web UI: overview, backups, Macs, iPhones, users, quotas |
 | `hydranest-tailscale` | Tailscale node: the iPhone service's network             |
 | `hydranest-iphone` | iPhone backups over USB, Wi-Fi and Tailscale ([iPhone backups](#iphone-backups)) |
 
@@ -122,6 +122,12 @@ are found by Bonjour, and a Tailscale node. Each iPhone's page has a
 HydraNest asks netmuxd to reach the phone at that address on start, every
 minute and after a change, whenever Bonjour can't see it.
 
+It all lives in the one HydraNest UI and login: the **iPhone** page shows
+the iPhone section inside the HydraNest layout (the web container proxies it
+under `/iphone/app/` and signs in with `IPHONE_AUTH_TOKEN`), and the iPhones
+appear in **Overview** and **Backups** next to the Macs, with their state in
+Backup Health.
+
 > **Wi-Fi is required, cellular is not enough.** iOS only opens the
 > backup/sync service while the iPhone is on a Wi-Fi network. Away from home
 > any Wi-Fi works (office, hotel) with Tailscale on; on mobile data alone
@@ -156,8 +162,8 @@ minute and after a change, whenever Bonjour can't see it.
 | `IPHONE_PORT`        | `8089`             | iPhone Web UI port |
 | `IPHONE_CONFIG_PATH` | required           | Host folder for settings, database and pairing records (AirVault's `/config`) |
 | `IPHONE_BACKUP_PATH` | required           | Host folder for the iPhone backups (AirVault's `/backups`) |
-| `IPHONE_AUTH_TOKEN`  | empty              | iPhone Web UI password; when empty, a generated one is printed in the log |
-| `IPHONE_URL`         | empty              | Link of the **iPhone** entry in the HydraNest menu, e.g. `http://192.168.2.6:8089`; empty hides it |
+| `IPHONE_AUTH_TOKEN`  | empty              | iPhone service token, used by HydraNest to open the iPhone section for you; set it (when empty the `iphone` container prints a generated one in its log and the iPhone page asks for it) |
+| `IPHONE_URL`         | empty              | The `iphone` service as the web container reaches it, e.g. `http://192.168.2.6:8089` (its macvlan address: the request goes through your router to that LAN). Empty hides the iPhone section |
 | `TS_AUTHKEY`         | empty              | Tailscale auth key, first start only. Empty: the log of `hydranest-tailscale` shows a login link instead |
 | `IPHONE_TS_HOSTNAME` | `hydranest-iphone` | Machine name on the tailnet |
 | `TS_EXTRA_ARGS`      | empty              | Extra `tailscale up` flags, e.g. `--advertise-tags=tag:hydranest` |
@@ -165,8 +171,7 @@ minute and after a change, whenever Bonjour can't see it.
 
 ### Pairing and remote access
 
-1. Open the iPhone Web UI (the **iPhone** entry in the HydraNest menu) and
-   click **Pair device** with the iPhone connected **over USB** to the
+1. Open **iPhone** in the HydraNest menu and click **Pair device** with the iPhone connected **over USB** to the
    server, once: the iPhone asks to trust the computer. After that the cable
    is no longer needed.
 2. In the iPhone's page, under **Remote access (Tailscale)**, enter its

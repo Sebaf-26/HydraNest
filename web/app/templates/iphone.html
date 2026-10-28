@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}iPhone - HydraNest{% endblock %}
+{% block heading %}
+<span class="flex items-center gap-3">
+    iPhone
+    <a href="/iphone/app/" target="_blank" rel="noopener" class="text-xs font-normal text-ink-400 hover:text-white">Open in a new tab &nearr;</a>
+</span>
+{% endblock %}
+{% block content %}
+{# The iPhone section's own UI (see iphone/NOTICE.md), served through
+   HydraNest under /iphone/app/ with its login handled here. The page's
+   padding is undone so the frame fills the area below the header. #}
+<div class="-mx-8 -my-8">
+    <iframe src="{{ src }}" title="iPhone backups"
+            class="block w-full border-0 bg-transparent"
+            style="height: calc(100vh - 61px)"></iframe>
+</div>
+{% endblock %}

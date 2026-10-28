@@ -25,9 +25,12 @@ class Settings(BaseSettings):
     # mounts at /etc/timenest/shares.d, or the user list stays empty.
     shares_path: Path = Field(default=Path("/config/shares.d"), alias="SHARES_PATH")
 
-    # Web UI of the iPhone container (e.g. http://192.168.2.6:8089). The
-    # "iPhone" menu entry is shown only when this is set.
+    # The iPhone container as this container reaches it (e.g.
+    # http://192.168.2.5:8089) and its Web UI token. HydraNest proxies its UI
+    # under /iphone/app/ and reads its device list; the "iPhone" section is
+    # shown only when the URL is set.
     iphone_url: str | None = Field(default=None, alias="IPHONE_URL")
+    iphone_auth_token: str | None = Field(default=None, alias="IPHONE_AUTH_TOKEN")
 
     enable_metrics: bool = Field(default=True, alias="ENABLE_METRICS")
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")

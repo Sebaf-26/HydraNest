@@ -82,4 +82,41 @@
 {% endfor %}
 </div>
 
+{# ---------------- iPhones ---------------- #}
+{% if phones.configured %}
+<div class="mt-10 flex items-end justify-between">
+    <div>
+        <h2 class="text-lg font-semibold tracking-tight">iPhones</h2>
+        <div class="text-xs text-ink-400 mt-0.5">
+            {% if phones.reachable %}{{ phones.phones | length }} {{ 'iPhone' if phones.phones | length == 1 else 'iPhones' }} &middot; {{ phones.restore_points }} restore points &middot; {{ phones.total_bytes | bytes }}{% else %}the iPhone service is not reachable{% endif %}
+        </div>
+    </div>
+    <a href="/iphone" class="text-xs text-accent-400 hover:text-accent-300">iPhone section &rarr;</a>
+</div>
+<div class="mt-4 space-y-4">
+{% for p in phones.phones %}
+    <a href="/iphone?d={{ p.udid | urlencode }}" class="hn-card px-5 py-4 flex flex-wrap items-center gap-x-6 gap-y-2 hover:ring-1 hover:ring-accent-500/20">
+        <span class="flex items-center gap-3 min-w-[14rem] flex-1">
+            <span class="rounded-lg bg-white/5 p-2 text-accent-400">{{ ui.phone_icon() }}</span>
+            <span>
+                <span class="block font-medium">{{ p.name }}</span>
+                <span class="block text-xs text-ink-400">{{ p.model or 'iPhone' }}{% if p.ios %} &middot; iOS {{ p.ios }}{% endif %} &middot; {{ ui.connection_label(p.connection) }}{% if p.encrypted %} &middot; encrypted{% endif %}{% if p.auto_backup %} &middot; automatic{% endif %}</span>
+            </span>
+        </span>
+        <span class="text-sm w-28"><span class="block text-ink-400 text-xs">Size</span>{{ p.disk_bytes | bytes if p.disk_bytes is not none else '-' }}</span>
+        <span class="text-sm w-24"><span class="block text-ink-400 text-xs">Restore points</span>{{ p.restore_points or '-' }}</span>
+        <span class="text-sm w-40"><span class="block text-ink-400 text-xs">Last backup</span><span title="{{ p.last_backup_ts | ts }}">{{ p.last_backup_ts | when if p.last_backup_ts else '-' }}</span></span>
+        <span class="w-32 text-right">{{ ui.status_chip(p.status) }}</span>
+        <svg class="h-4 w-4 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"></path></svg>
+    </a>
+{% else %}
+    {% if phones.reachable %}
+    <div class="hn-card px-5 py-12 text-center text-ink-500">
+        No iPhone yet. Pair one over USB in the <a href="/iphone" class="text-accent-400">iPhone section</a>.
+    </div>
+    {% endif %}
+{% endfor %}
+</div>
+{% endif %}
+
 {% endblock %}

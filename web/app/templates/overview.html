@@ -137,6 +137,42 @@
 
 </div>
 
+{# ---------------- iPhones ---------------- #}
+{% if phones.configured %}
+<div class="hn-card mt-5">
+    {{ ui.card_head('iPhones', 'backed up at home and, through Tailscale, from any Wi-Fi', '/iphone', 'iPhone section') }}
+    {% if not phones.reachable %}
+    <div class="px-5 pb-5 text-sm text-amber-300">The iPhone service is not reachable.</div>
+    {% else %}
+    <table class="w-full text-sm">
+        <tbody class="divide-y divide-white/5">
+        {% for p in phones.phones %}
+            <tr class="hover:bg-white/[0.02]">
+                <td class="px-5 py-3">
+                    <a href="/iphone?d={{ p.udid | urlencode }}" class="flex items-center gap-3">
+                        <span class="text-ink-400">{{ ui.phone_icon() }}</span>
+                        <span>
+                            <span class="block">{{ p.name }}</span>
+                            <span class="block text-xs text-ink-500">{{ p.model or 'iPhone' }}{% if p.ios %} &middot; iOS {{ p.ios }}{% endif %}</span>
+                        </span>
+                    </a>
+                </td>
+                <td class="px-5 py-3 hidden md:table-cell">
+                    <span class="flex items-center gap-2 text-ink-300">{{ ui.online_dot(p.online) }}{{ ui.connection_label(p.connection) }}</span>
+                </td>
+                <td class="px-5 py-3 text-ink-300">{% if p.status == 'running' %}backing up{% if p.progress is not none %} &middot; {{ p.progress }}%{% endif %}{% else %}{{ p.last_backup_ts | when if p.last_backup_ts else 'never' }}{% endif %}</td>
+                <td class="px-5 py-3 text-right font-medium hidden md:table-cell">{{ p.disk_bytes | bytes if p.disk_bytes is not none else '' }}</td>
+                <td class="px-5 py-3 text-right">{{ ui.status_chip(p.status) }}</td>
+            </tr>
+        {% else %}
+            <tr><td class="px-5 py-8 text-center text-ink-500">No iPhone yet. <a href="/iphone" class="text-accent-400">Pair one over USB &rarr;</a></td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+</div>
+{% endif %}
+
 {# ---------------- Recent backups ---------------- #}
 <div class="hn-card mt-5">
     {{ ui.card_head('Recent Backups', 'completed Time Machine snapshots', '/backups', 'All backups') }}
