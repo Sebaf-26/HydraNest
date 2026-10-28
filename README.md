@@ -18,7 +18,7 @@ It fixes the Samba and user-management problems found when running it on
 Proxmox + Portainer. See [What the fork fixes](#what-the-fork-fixes) and the
 [CHANGELOG](CHANGELOG.md).
 
-<img src="docs/screenshots/02-overview.png" alt="HydraNest overview: storage usage, backup health, connected Macs, top users, recent backups" width="100%">
+<img src="docs/screenshots/02-overview.png" alt="HydraNest overview: storage split between Macs and iPhones, backup health, devices, recent backups" width="100%">
 
 ---
 
