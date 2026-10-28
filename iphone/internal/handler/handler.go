@@ -122,6 +122,8 @@ func (h *Handler) Router() *echo.Echo {
 	device.POST("/backup-password", h.changeBackupPassword)
 	device.PUT("/auto-backup", h.setAutoBackup)
 	device.PUT("/cleanup", h.setCleanup)
+	device.GET("/remote", h.getRemote) // HydraNest
+	device.PUT("/remote", h.setRemote)
 	device.GET("/cleanup/plan", h.planCleanup)
 	device.POST("/power", h.controlPower)
 	device.POST("/erase", h.eraseDevice)

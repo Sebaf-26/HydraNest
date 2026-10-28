@@ -27,6 +27,8 @@ type Muxer struct {
 	listeners []net.Conn
 	down      bool
 	hung      bool
+	reachable map[string]reachable // HydraNest: netmuxd AddDevice targets
+	adds      int
 }
 
 type attachment struct {
@@ -152,7 +154,9 @@ func (m *Muxer) serve(conn net.Conn) {
 	}
 	reply := m.reply(request)
 	m.mu.Unlock()
-	_ = writeMux(conn, reply)
+	if reply != nil { // HydraNest: netmuxd closes some AddDevice requests unanswered
+		_ = writeMux(conn, reply)
+	}
 	_ = conn.Close()
 }
 
@@ -179,6 +183,8 @@ func (m *Muxer) reply(request map[string]any) map[string]any {
 	case "SavePairRecord":
 		m.records[request["PairRecordID"].(string)] = request["PairRecordData"].([]byte)
 		return map[string]any{"MessageType": "Result", "Number": uint64(0)}
+	case "AddDevice":
+		return m.addDevice(request)
 	}
 	return map[string]any{"MessageType": "Result", "Number": uint64(ios.MuxBadCommand)}
 }

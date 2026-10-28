@@ -132,6 +132,10 @@ func run() error {
 	// before presence lands waits for reachability inside the run.
 	svc.StartWatch(ctx)
 	svc.StartMaintenance(ctx, backupSources)
+	// HydraNest: phones reached by a Tailscale address.
+	if err := svc.StartRemote(ctx, filepath.Join(cfg.ConfigDir, "hydranest-remote.json")); err != nil {
+		return err
+	}
 	var httpShutdownIncomplete atomic.Bool
 	// Abort in-flight work and join supervised workers before the deferred
 	// closes. The bound is a last-resort process-exit escape, not a normal

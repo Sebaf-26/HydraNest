@@ -99,6 +99,15 @@ const english = {
   cleanup_remove_failed: 'The settings are saved, but these backups could not be removed right now; the next backup removes them',
   invalid_cleanup_thin: 'Choose what to keep of older backups',
 
+  // HydraNest: remote (Tailscale) access.
+  remote_load_failed: 'Could not load the remote access settings',
+  remote_save_failed: 'The remote address could not be saved',
+  invalid_remote_address: 'Enter an IP address or a host name, without http:// or a port',
+  remote_unreachable: 'Not reachable: the iPhone must be on a Wi-Fi network with Tailscale on',
+  remote_not_added: 'The phone was not added: pair it over USB first',
+  remote_resolve_failed: 'That name does not resolve; use the Tailscale IP or the full MagicDNS name',
+  remote_muxer_failed: 'The USB/Wi-Fi service did not answer; trying again',
+
   backup_start_failed: 'Failed to start backup',
   backup_cancel_failed: 'Failed to cancel',
   backup_history_failed: 'Could not load the restore points',

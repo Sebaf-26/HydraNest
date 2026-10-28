@@ -28,6 +28,7 @@ type Service struct {
 	lockObs  *lockObserverMgr
 	gallery  *galleryIndex
 	unlocked unlockedBackups
+	remote   *remoteRegistry // HydraNest: remote (Tailscale) addresses
 	wg       sync.WaitGroup
 
 	deviceTransitionMu sync.Mutex
