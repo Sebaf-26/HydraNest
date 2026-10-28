@@ -17,6 +17,7 @@
   import Icon from './Icon.svelte';
   import Pill from './Pill.svelte';
   import ProgressBar from './ProgressBar.svelte';
+  import RemoteAccessRow from './RemoteAccessRow.svelte';
 
   let {
     device,
@@ -372,6 +373,11 @@
           {cleanupText ? 'Change…' : 'Set up…'}
         </button>
       </div>
+    {/if}
+
+    <!-- HydraNest: Tailscale address, for backups away from home. -->
+    {#if !device.orphaned}
+      <RemoteAccessRow udid={device.udid} name={device.name} />
     {/if}
   </div>
 </div>

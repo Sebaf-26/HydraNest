@@ -8,7 +8,6 @@
   import EmptyState from '../lib/components/EmptyState.svelte';
   import HardwareCard from '../lib/components/HardwareCard.svelte';
   import Icon from '../lib/components/Icon.svelte';
-  import RemoteAccessCard from '../lib/components/RemoteAccessCard.svelte';
   import RestoreModal from '../lib/components/RestoreModal.svelte';
   import { devicesStore } from '../lib/stores.svelte';
 
@@ -41,7 +40,6 @@
     <HardwareCard {udid} reachable={device.connection !== 'offline'} />
     <BackupCard {device} onrestore={() => (restoring = { preselect: null })} />
     <BackupHistory {device} onrestore={(snapshotId) => (restoring = { preselect: snapshotId })} />
-    <RemoteAccessCard udid={device.udid} />
     {#if restoring}
       <RestoreModal
         udid={device.udid}

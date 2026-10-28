@@ -10,8 +10,8 @@ MIT.
 
 Since 2026-10-28:
 
-- **Remote address per iPhone.** Each device page has a "Remote access
-  (Tailscale)" card for a Tailscale IP or MagicDNS name. On start, every
+- **Remote address per iPhone.** The Backup card of each device page has a
+  "Remote access" row (Tailscale IP or MagicDNS name, set in a dialog). On start, every
   minute and right after a change, the daemon resolves it and sends netmuxd
   an `AddDevice` (UDID + IP) unless the phone is already on the network, so
   backups also run away from home. The addresses are kept in
@@ -19,7 +19,8 @@ Since 2026-10-28:
   upstream's. New files: `internal/ios/netmuxd.go`,
   `internal/engine/remote.go`, `internal/service/remote.go`,
   `internal/handler/remote.go`, `web/src/lib/api/remote.ts`,
-  `web/src/lib/components/RemoteAccessCard.svelte` (with tests); small
+  `web/src/lib/components/RemoteAccessRow.svelte` and
+  `RemoteAccessModal.svelte` (with tests); small
   hooks in `cmd/airvault/main.go`, `internal/handler/handler.go`,
   `internal/service/service.go`, `internal/ios/iostest/`.
 - **HydraNest branding.** Name, logo (`web/public/hydranest-logo.svg`),

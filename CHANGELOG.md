@@ -4,6 +4,20 @@ HydraNest è un fork di [momenbasel/timenest](https://github.com/momenbasel/time
 (server Time Machine su Samba + Avahi + Web UI) con le correzioni emerse
 installandolo su Proxmox + Portainer.
 
+## v0.5.2 — 2026-10-28
+
+### Sezione iPhone
+- L'indirizzo Tailscale non ha più una scheda a sé in fondo alla pagina
+  dell'iPhone: è la riga **Remote access** della card Backup, sotto
+  Automatic cleanup, con stato (Reachable, Not reachable, Off), indirizzo e
+  ultimo controllo. Si imposta o si cambia da una finestra («Set up…» /
+  «Change…»), dove c'è anche «Turn off».
+
+### Web UI
+- Sotto il nome e la versione, in alto a sinistra: «forked from TimeNest &
+  AirVault», con i link ai due progetti (AirVault solo se la sezione iPhone
+  è attiva).
+
 ## v0.5.1 — 2026-10-28
 
 ### Overview riordinata
