@@ -1,4 +1,4 @@
-"""View models shared by the Overview, Backups, Clients and Quotas pages.
+"""View models shared by the Overview, Backups, Macs and Quotas pages.
 
 Everything is derived from real data: share fragments (users, quotas), the
 backup folders (Time Machine bundles and snapshots), live smbstatus sessions

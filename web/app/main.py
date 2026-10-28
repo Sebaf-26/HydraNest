@@ -230,9 +230,15 @@ async def iphone_app(request: Request, rest: str) -> Response:
     return await iphone.proxy(request, settings)
 
 
-@app.get("/clients", response_class=HTMLResponse)
-async def clients_page(request: Request, user: str = LoginDep) -> Response:
-    return await _render(request, "clients.html", "clients", ov=await _overview())
+@app.get("/macs", response_class=HTMLResponse)
+async def macs_page(request: Request, user: str = LoginDep) -> Response:
+    return await _render(request, "clients.html", "macs", ov=await _overview())
+
+
+@app.get("/clients")
+def clients_moved() -> Response:
+    # The page was called Clients until v0.5.3.
+    return RedirectResponse("/macs", status_code=status.HTTP_308_PERMANENT_REDIRECT)
 
 
 @app.get("/quotas", response_class=HTMLResponse)

@@ -226,9 +226,10 @@ If the server doesn't appear, in Finder use **Go -> Connect to Server**
 
 | Page | What it shows |
 | :--- | :------------ |
-| **Overview** | Backup space donut (backups vs. free space; other data on the volume is ignored), backup health, connected Macs, top users by quota usage, recent Time Machine snapshots |
+| **Overview** | Backup space split between Macs and iPhones (and free space), backup health, every device (Macs and iPhones) with its last backup and status, recent backups |
 | **Backups** | One card per Mac backup: model, size, snapshot count and list, verification state, last write |
-| **Clients** | Every Mac: online/offline, IP, last seen, last backup, status (up to date, backing up, overdue) |
+| **Macs** | Every Mac: online/offline, IP, last seen, last backup, status (up to date, backing up, overdue) |
+| **iPhone** | The iPhone section: pairing, backups, restore points, remote access (see [iPhone backups](#iphone-backups)) |
 | **Users** | Create, edit (quota and password), remove |
 | **Quotas** | Usage bar per user, free space, inline quota edit, warning when quotas exceed the disk |
 | **Settings** | Current configuration and Prometheus target |
@@ -242,9 +243,9 @@ amber when a Mac hasn't completed a backup in 7 days, a user is above 90% of
 the quota, or the space available for backups is above 90% used, and red when Samba is down or the
 backup volume is missing.
 
-| Backups | Clients |
+| Backups | Macs |
 | :-: | :-: |
-| <img src="docs/screenshots/07-backups.png" alt="Backups" width="100%"> | <img src="docs/screenshots/08-clients.png" alt="Clients" width="100%"> |
+| <img src="docs/screenshots/07-backups.png" alt="Backups" width="100%"> | <img src="docs/screenshots/08-clients.png" alt="Macs" width="100%"> |
 | **Quotas** | **Users** |
 | <img src="docs/screenshots/09-quotas.png" alt="Quotas" width="100%"> | <img src="docs/screenshots/03-users.png" alt="Users" width="100%"> |
 | **Settings** | **Login** |

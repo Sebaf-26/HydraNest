@@ -4,6 +4,14 @@ HydraNest è un fork di [momenbasel/timenest](https://github.com/momenbasel/time
 (server Time Machine su Samba + Avahi + Web UI) con le correzioni emerse
 installandolo su Proxmox + Portainer.
 
+## v0.5.3 — 2026-10-28
+
+### Web UI
+- La pagina **Clients** si chiama **Macs** (voce del menu, titolo e indirizzo
+  `/macs`); il vecchio indirizzo `/clients` porta alla nuova pagina.
+- README: la tabella delle pagine descrive la nuova Overview e la pagina
+  iPhone.
+
 ## v0.5.2 — 2026-10-28
 
 ### Sezione iPhone
