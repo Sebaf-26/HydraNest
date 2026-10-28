@@ -75,6 +75,7 @@ _templates_dir = Path(__file__).resolve().parent / "templates"
 templates = Jinja2Templates(directory=_templates_dir)
 templates.env.globals["version"] = __version__
 templates.env.globals["server_name"] = settings.admin_user
+templates.env.globals["iphone_url"] = settings.iphone_url or None
 
 
 def _mgr() -> samba_mgr.SambaManager:

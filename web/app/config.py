@@ -25,6 +25,10 @@ class Settings(BaseSettings):
     # mounts at /etc/timenest/shares.d, or the user list stays empty.
     shares_path: Path = Field(default=Path("/config/shares.d"), alias="SHARES_PATH")
 
+    # Web UI of the iPhone container (e.g. http://192.168.2.6:8089). The
+    # "iPhone" menu entry is shown only when this is set.
+    iphone_url: str | None = Field(default=None, alias="IPHONE_URL")
+
     enable_metrics: bool = Field(default=True, alias="ENABLE_METRICS")
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
     timezone: str = Field(default="UTC", alias="TZ")

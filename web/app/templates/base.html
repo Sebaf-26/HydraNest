@@ -83,6 +83,19 @@
                 <span>{{ label }}</span>
             </a>
             {% endfor %}
+            {% if iphone_url %}
+            {# The iPhone section is its own container with its own login. #}
+            <a href="{{ iphone_url }}" target="_blank" rel="noopener"
+               class="flex items-center gap-3 rounded-lg px-3 py-2.5 transition text-ink-300 hover:bg-white/5 hover:text-white">
+                <svg class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z M11 18h2"></path>
+                </svg>
+                <span class="flex-1">iPhone</span>
+                <svg class="h-3.5 w-3.5 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M15 3h6v6 M10 14 21 3 M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                </svg>
+            </a>
+            {% endif %}
         </nav>
         <div class="px-4 py-4 border-t border-ink-800 text-xs text-ink-400">
             <a href="/logout" class="hover:text-white">Sign out</a>
