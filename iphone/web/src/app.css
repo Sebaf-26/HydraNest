@@ -181,3 +181,8 @@
     }
   }
 }
+
+/* HydraNest: framed in HydraNest's iPhone page, the page shows through. */
+:root[data-embedded] {
+  background-color: transparent;
+}

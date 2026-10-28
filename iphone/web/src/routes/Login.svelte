@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { embedded } from '../lib/embedded';
   import { push } from 'svelte-spa-router';
   import Logo from '../lib/components/Logo.svelte';
   import ErrorLine from '../lib/components/ErrorLine.svelte';
@@ -36,6 +37,11 @@
         <p class="text-sm text-base-content/60">
           Paste your Web UI token
         </p>
+        {#if embedded}
+          <p class="text-xs text-warning">
+            HydraNest could not sign in to the iPhone service by itself: check IPHONE_AUTH_TOKEN in the stack.
+          </p>
+        {/if}
       </div>
 
       <input

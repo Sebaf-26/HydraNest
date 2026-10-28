@@ -336,7 +336,7 @@
           </p>
         {:else}
           <p class="mt-0.5 text-xs text-base-content/60">
-            Backs up shortly after the iPhone is unlocked at home; iOS asks for the passcode each time
+            Backs up shortly after the iPhone is unlocked on Wi-Fi (at home or through Tailscale); iOS asks for the passcode each time
           </p>
         {/if}
       </div>

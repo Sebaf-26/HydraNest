@@ -9,6 +9,7 @@
   import { statusStore } from '../stores.svelte';
   import { eventsClient } from '../events.svelte';
   import { logout } from '../api/session';
+  import { embedded } from '../embedded';
 
   // Mounted on every non-login route: owns the status fetch (muxer pill here,
   // offline banner in App) and the single shared SSE stream.
@@ -26,6 +27,23 @@
   }
 </script>
 
+{#snippet muxerPill()}
+  {#if muxer?.up}
+    <span class="hidden sm:inline-flex">
+      <Pill tone="green" dot>USB {muxer.usb} · Wi-Fi {muxer.wifi}</Pill>
+    </span>
+  {:else if muxer}
+    <span title={muxer.error}><Pill tone="red" dot>USB/Wi-Fi down</Pill></span>
+  {/if}
+{/snippet}
+
+<!-- HydraNest: framed in HydraNest, whose header carries the name and the
+     sign-out, only the muxer status stays. -->
+{#if embedded}
+  <div class="mx-auto flex w-full max-w-6xl justify-end px-4 pt-4 sm:px-6">
+    {@render muxerPill()}
+  </div>
+{:else}
 <header class="sticky top-0 z-20 border-b border-base-300 bg-base-100/85 backdrop-blur">
   <div class="navbar mx-auto min-h-14 w-full max-w-6xl gap-2 px-4 sm:px-6">
     <div class="navbar-start min-w-0">
@@ -39,13 +57,7 @@
     </div>
 
     <div class="navbar-end gap-2">
-      {#if muxer?.up}
-        <span class="hidden sm:inline-flex">
-          <Pill tone="green" dot>USB {muxer.usb} · Wi-Fi {muxer.wifi}</Pill>
-        </span>
-      {:else if muxer}
-        <span title={muxer.error}><Pill tone="red" dot>USB/Wi-Fi down</Pill></span>
-      {/if}
+      {@render muxerPill()}
       <ThemeToggle />
       <button
         type="button"
@@ -59,3 +71,4 @@
     </div>
   </div>
 </header>
+{/if}

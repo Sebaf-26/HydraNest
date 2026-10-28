@@ -68,7 +68,7 @@ export function autoBackupStatus(
     }
   }
   const inWindow = window ? ` between ${window.start} and ${window.end}` : '';
-  return { schedule, next: `Due — starts on the next unlock at home${inWindow}` };
+  return { schedule, next: `Due — starts on the next unlock on Wi-Fi${inWindow}` };
 }
 
 export const CLEANUP_THIN: Record<ThinPeriod, { label: string; hint: string }> = {

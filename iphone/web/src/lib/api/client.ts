@@ -1,6 +1,7 @@
 import { errorText, type ErrorTextKey } from '../error-text';
 
-const BASE = '/api';
+// HydraNest: relative, so the UI also works under HydraNest's /iphone/app/.
+const BASE = 'api';
 const CSRF_COOKIE = '_csrf';
 
 interface RequestOptions {

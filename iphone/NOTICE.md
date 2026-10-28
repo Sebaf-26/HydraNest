@@ -28,6 +28,12 @@ Since 2026-10-28:
   image labels. Internal names (Go module path, `AIRVAULT_*` variables,
   theme and storage keys) are unchanged, so existing settings and data keep
   working.
+- **Inside HydraNest.** The UI uses relative paths (`base: './'`, API
+  under `api/`), so it also works under HydraNest's `/iphone/app/` proxy.
+  Framed in HydraNest's iPhone page (`web/src/lib/embedded.ts`) it drops
+  its own header, sign-out and footer, keeps the dark theme and lets the
+  page background show through; the login page explains a wrong
+  `IPHONE_AUTH_TOKEN`. Automatic-backup texts no longer say "at home".
 - **amd64 and arm64 image.** The Dockerfile fetches netmuxd for the target
   architecture (pinned digests) and cross-compiles the daemon.
 

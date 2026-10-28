@@ -8,9 +8,19 @@
     <link rel="icon" type="image/svg+xml" href="/hydranest-logo.svg" />
     <title>HydraNest · iPhone</title>
     <!-- Set the theme before first paint to avoid a flash of the wrong one:
-         saved choice, then dark like the rest of HydraNest. -->
+         saved choice, then dark like the rest of HydraNest. Framed inside
+         HydraNest: always dark, on HydraNest's own background. -->
     <script>
       (function () {
+        var embedded = true;
+        try {
+          embedded = window.self !== window.top;
+        } catch (e) {}
+        if (embedded) {
+          document.documentElement.setAttribute('data-embedded', '');
+          document.documentElement.setAttribute('data-theme', 'airvaultdark');
+          return;
+        }
         try {
           var saved = localStorage.getItem('airvault-theme');
           var dark = saved ? saved === 'dark' : true;

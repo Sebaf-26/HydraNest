@@ -162,7 +162,7 @@ class EventsClient {
 
   #open(reconnect = false): void {
     clearTimeout(this.#reconnectTimer);
-    const es = new EventSource('/api/events');
+    const es = new EventSource('api/events');
     this.#es = es;
 
     let resync = reconnect;

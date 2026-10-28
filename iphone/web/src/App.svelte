@@ -3,6 +3,7 @@
   import Nav from './lib/components/Nav.svelte';
   import Alert from './lib/components/Alert.svelte';
   import { statusStore } from './lib/stores.svelte';
+  import { embedded } from './lib/embedded';
   import Devices from './routes/Devices.svelte';
   import DeviceDetail from './routes/DeviceDetail.svelte';
   import Login from './routes/Login.svelte';
@@ -26,7 +27,7 @@
 {#if onLogin}
   <Router {routes} />
 {:else}
-<div class="flex min-h-screen flex-col bg-base-200 text-base-content">
+<div class={`flex min-h-screen flex-col text-base-content ${embedded ? '' : 'bg-base-200'}`}>
   <Nav />
 
   {#if showOfflineBanner}
@@ -39,6 +40,7 @@
     <Router {routes} />
   </main>
 
+  {#if !embedded}
   <footer class="border-t border-base-300">
     <div class="mx-auto flex w-full max-w-6xl items-center justify-between gap-2 px-4 py-4 text-xs text-base-content/60 sm:px-6">
       <span>
@@ -49,5 +51,6 @@
       <span>{appVersion}</span>
     </div>
   </footer>
+  {/if}
 </div>
 {/if}
