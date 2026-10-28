@@ -1,0 +1,344 @@
+<script lang="ts">
+  // Failed attempts are runtime events; this list holds only completed restore
+  // points that still exist.
+  import { untrack } from 'svelte';
+  import { SvelteSet } from 'svelte/reactivity';
+  import { downloadBackup, snapshotsReclaimable, type RestorePoint } from '../api/backups';
+  import { errMsg } from '../api/client';
+  import type { Device } from '../api/devices';
+  import { blockedReason } from '../device-ui';
+  import { liveRun } from '../events.svelte';
+  import { deleteRestorePoints, restorePointResources } from '../stores.svelte';
+  import { formatBytes, formatDateTime, formatDuration, relativeTime } from '../format';
+  import { now } from '../clock';
+  import BackupBrowser from './BackupBrowser.svelte';
+  import ConfirmDialog from './ConfirmDialog.svelte';
+  import EmptyState from './EmptyState.svelte';
+  import ErrorLine from './ErrorLine.svelte';
+  import Icon from './Icon.svelte';
+  import Pill from './Pill.svelte';
+
+  let {
+    device,
+    onrestore,
+  }: {
+    device: Device;
+    /** Open the restore flow with this snapshot preselected. */
+    onrestore: (snapshotId: string) => void;
+  } = $props();
+
+  const udid = $derived(device.udid);
+
+  const points = $derived(restorePointResources.for(udid));
+  $effect(() => points.start());
+  const restorePoints = $derived(points.data ?? []);
+  const pointsLoaded = $derived(points.ready);
+  const pointsError = $derived(points.loadError('backup_history_failed'));
+
+  const live = $derived(liveRun(udid));
+  const isRunning = $derived(live !== null);
+  const restoreBlocked = $derived(blockedReason(device, live));
+  // Checkboxes appear only in selection mode; leaving it drops the selection.
+  let selecting = $state(false);
+  const selected = new SvelteSet<string>();
+  let pending = $state<RestorePoint[]>([]);
+  let reclaim = $state<Promise<number>>();
+  // The snapshot whose download is being checked before the browser takes it.
+  let downloading = $state<string | null>(null);
+  let downloadError = $state<string | null>(null);
+  let browsing = $state<RestorePoint | null>(null);
+
+  const PAGE_SIZE = 10;
+  let page = $state(1);
+  const pageCount = $derived(Math.max(1, Math.ceil(restorePoints.length / PAGE_SIZE)));
+  const pageStart = $derived((page - 1) * PAGE_SIZE);
+  const pagePoints = $derived(restorePoints.slice(pageStart, pageStart + PAGE_SIZE));
+
+  // The selection acts only on listed points — a refresh may have dropped some.
+  // It survives paging; the header checkbox covers the open page.
+  const selectedPoints = $derived(restorePoints.filter((point) => selected.has(point.snapshotId)));
+  const allSelected = $derived(pagePoints.every((point) => selected.has(point.snapshotId)));
+
+  // A deletion can shrink the list under the open page; follow it down so a
+  // later backup doesn't jump the view back.
+  $effect(() => {
+    if (page > pageCount) page = pageCount;
+  });
+
+  // Nothing left to select (e.g. everything was deleted) ends the mode.
+  $effect(() => {
+    if (restorePoints.length === 0) untrack(stopSelecting);
+  });
+
+  function stopSelecting() {
+    selecting = false;
+    selected.clear();
+  }
+
+  function toggleAll(select: boolean) {
+    for (const point of pagePoints) {
+      if (select) selected.add(point.snapshotId);
+      else selected.delete(point.snapshotId);
+    }
+  }
+
+  function askDelete(targets: RestorePoint[]) {
+    pending = targets;
+    // Honest "space freed": data no kept restore point still references.
+    reclaim = snapshotsReclaimable(udid, targets.map((point) => point.snapshotId));
+  }
+
+  async function confirmDelete() {
+    await deleteRestorePoints(udid, pending.map((point) => point.snapshotId));
+    stopSelecting();
+  }
+
+  function damageText(point: RestorePoint): string {
+    return point.damage === 'manifest_unreadable'
+      ? 'Its list of files no longer reads; it can only be deleted'
+      : `${point.damagedFiles ?? 0} of its files no longer read from disk; it can only be deleted`;
+  }
+
+  async function download(snapshotId: string): Promise<void> {
+    downloading = snapshotId;
+    downloadError = null;
+    try {
+      await downloadBackup(snapshotId);
+    } catch (err) {
+      downloadError = errMsg(err, 'download_failed');
+    } finally {
+      downloading = null;
+    }
+  }
+</script>
+
+<section class="flex flex-col gap-3">
+  <div class="flex min-h-6 items-center justify-between gap-2">
+    <h2 class="text-xs font-semibold uppercase tracking-wide text-base-content/50">Restore points</h2>
+    {#if pointsLoaded && restorePoints.length > 0}
+      <div class="flex items-center gap-2">
+        {#if selecting}
+          <button
+            type="button"
+            class="btn btn-error btn-xs"
+            disabled={isRunning || selectedPoints.length === 0}
+            onclick={() => askDelete(selectedPoints)}
+            title={isRunning ? 'Another operation is running on this phone' : 'Delete the selected restore points'}
+          >
+            <Icon name="trash" size={13} />
+            Delete selected ({selectedPoints.length})
+          </button>
+          <button type="button" class="btn btn-ghost btn-xs" onclick={stopSelecting}>Cancel</button>
+        {:else}
+          <button type="button" class="btn btn-ghost btn-xs" onclick={() => (selecting = true)}>
+            Select
+          </button>
+        {/if}
+      </div>
+    {/if}
+  </div>
+
+  <ErrorLine error={downloadError} size="xs" />
+  {#if pointsError}
+    <ErrorLine error={pointsError} variant="alert" />
+  {:else if !pointsLoaded}
+    <div class="flex items-center gap-3 rounded-box bg-base-100 p-4 text-sm text-base-content/60 shadow-sm">
+      <span class="loading loading-spinner loading-sm"></span>
+      Loading restore points…
+    </div>
+  {:else if restorePoints.length === 0}
+    <EmptyState icon="clock" title="No restore points yet" message="Completed backups will appear here" />
+  {:else}
+    <div class="card overflow-x-auto bg-base-100 shadow-sm">
+      <table class="table table-sm">
+        <thead>
+          <tr class="text-xs">
+            {#if selecting}
+              <th class="w-0">
+                <input
+                  type="checkbox"
+                  class="checkbox checkbox-xs"
+                  checked={allSelected}
+                  aria-label="Select all restore points on this page"
+                  onchange={(event) => toggleAll(event.currentTarget.checked)}
+                />
+              </th>
+            {/if}
+            <th>Created</th>
+            <th class="hidden sm:table-cell">Duration</th>
+            <th>Size</th>
+            <th class="w-0"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {#each pagePoints as point (point.snapshotId)}
+            <tr class="hover:bg-base-200/60">
+              {#if selecting}
+                <td>
+                  <input
+                    type="checkbox"
+                    class="checkbox checkbox-xs"
+                    checked={selected.has(point.snapshotId)}
+                    aria-label="Select restore point"
+                    onchange={() =>
+                      selected.has(point.snapshotId)
+                        ? selected.delete(point.snapshotId)
+                        : selected.add(point.snapshotId)}
+                  />
+                </td>
+              {/if}
+              <td title={formatDateTime(point.created)}>
+                {relativeTime(point.created, $now)}
+                {#if point.damage}
+                  <span class="tooltip tooltip-error ml-1" data-tip={damageText(point)}>
+                    <Pill tone="red" dot>Damaged</Pill>
+                  </span>
+                {/if}
+              </td>
+              <td class="hidden text-base-content/60 sm:table-cell">{formatDuration(point.started, point.created)}</td>
+              <td class="font-mono text-xs text-base-content/60">
+                <div>{formatBytes(point.sizeBytes)}</div>
+                {#if point.transferredBytes !== null}
+                  <div class="text-[10px] text-base-content/40" title="Payload received from the phone during this backup">
+                    {formatBytes(point.transferredBytes)} transferred
+                  </div>
+                {/if}
+              </td>
+              <td class="whitespace-nowrap text-right">
+                {#if !selecting}
+                  <button
+                    type="button"
+                    class="btn btn-ghost btn-xs"
+                    disabled={!!restoreBlocked || !!point.damage}
+                    onclick={() => onrestore(point.snapshotId)}
+                    title={point.damage
+                      ? "A damaged restore point can't be restored"
+                      : (restoreBlocked ?? 'Restore this snapshot onto the phone')}
+                    aria-label="Restore this snapshot"
+                  >
+                    <Icon name="restore" size={13} />
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-ghost btn-xs relative"
+                    disabled={!!point.damage}
+                    onclick={() => (browsing = point)}
+                    title={point.damage
+                      ? "A damaged restore point can't be opened"
+                      : point.unlocked
+                        ? 'Browse this snapshot — unlocked, no password needed'
+                        : 'Browse this snapshot'}
+                    aria-label={point.unlocked ? 'Browse this snapshot (unlocked)' : 'Browse this snapshot'}
+                  >
+                    <Icon name="browse" size={13} />
+                    {#if point.unlocked}
+                      <Icon
+                        name="unlocked"
+                        size={10}
+                        stroke={2.5}
+                        class="absolute right-0 top-0 rounded-full bg-base-100 text-success"
+                      />
+                    {/if}
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-ghost btn-xs"
+                    disabled={downloading !== null || !!point.damage}
+                    onclick={() => download(point.snapshotId)}
+                    title={point.damage
+                      ? "A damaged restore point can't be downloaded"
+                      : `Download as a Finder backup (≈ ${formatBytes(point.sizeBytes)})`}
+                    aria-label="Download this snapshot as a Finder backup"
+                  >
+                    {#if downloading === point.snapshotId}
+                      <span class="loading loading-spinner loading-xs"></span>
+                    {:else}
+                      <Icon name="download" size={13} />
+                    {/if}
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-ghost btn-xs text-error"
+                    disabled={isRunning}
+                    onclick={() => askDelete([point])}
+                    title={isRunning ? 'Another operation is running on this phone' : 'Delete this restore point'}
+                    aria-label="Delete restore point"
+                  >
+                    <Icon name="trash" size={13} />
+                  </button>
+                {/if}
+              </td>
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+    </div>
+    {#if pageCount > 1}
+      <nav class="flex items-center justify-end gap-2 text-xs text-base-content/60" aria-label="Restore point pages">
+        <span class="tabular-nums">
+          {pageStart + 1}–{pageStart + pagePoints.length} of {restorePoints.length}
+        </span>
+        <div class="join">
+          <button
+            type="button"
+            class="join-item btn btn-ghost btn-xs"
+            disabled={page === 1}
+            onclick={() => (page -= 1)}
+            aria-label="Previous page"
+          >
+            <Icon name="chevronLeft" size={13} />
+          </button>
+          <button
+            type="button"
+            class="join-item btn btn-ghost btn-xs"
+            disabled={page === pageCount}
+            onclick={() => (page += 1)}
+            aria-label="Next page"
+          >
+            <Icon name="chevronRight" size={13} />
+          </button>
+        </div>
+      </nav>
+    {/if}
+  {/if}
+</section>
+
+{#if browsing}
+  <BackupBrowser point={browsing} deviceName={device.name} onclose={() => (browsing = null)} />
+{/if}
+
+{#if pending.length > 0}
+  <ConfirmDialog
+    title={pending.length > 1 ? `Delete ${pending.length} restore points?` : 'Delete this restore point?'}
+    icon="trash"
+    confirmLabel="Delete"
+    busyLabel="Deleting…"
+    cancelLabel={pending.length > 1 ? 'Keep them' : 'Keep it'}
+    failureCode="snapshot_delete_failed"
+    onconfirm={confirmDelete}
+    onclose={() => (pending = [])}
+  >
+    <p class="py-3 text-sm text-base-content/70">
+      {#if pending.length > 1}
+        The {pending.length} selected restore points will be removed. Other restore points are not
+        affected.
+      {:else}
+        The backup from
+        <span class="font-medium">
+          {formatDateTime(pending[0].created)}
+        </span>
+        will be removed. Other restore points are not affected.
+      {/if}
+    </p>
+    <p class="flex items-center gap-1.5 rounded-box bg-base-200 p-3 text-sm">
+      <Icon name="info" size={14} />
+      {#await reclaim}
+        <span class="text-base-content/60">Calculating space freed…</span>
+      {:then bytes}
+        <span>Frees about <span class="font-medium tabular-nums">{formatBytes(bytes)}</span> on disk</span>
+      {:catch}
+        <span class="text-base-content/60">Space could not be calculated right now</span>
+      {/await}
+    </p>
+  </ConfirmDialog>
+{/if}
